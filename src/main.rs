@@ -5,12 +5,12 @@ mod utils;
 use std::collections::HashMap;
 
 use actix_web::{web, App, HttpServer};
-use proxy::Db;
+use proxy::KeyStore;
 use tokio::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let db = web::Data::new(Db {
+    let db = web::Data::new(KeyStore {
         content: Mutex::new(HashMap::new()),
     });
     HttpServer::new(move || {

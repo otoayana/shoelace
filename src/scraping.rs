@@ -1,5 +1,5 @@
 use crate::{
-    proxy::{self, Db},
+    proxy::{self, KeyStore},
     utils::query,
 };
 use actix_web::web::Data;
@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::vec;
 use tokio::task;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Post {
     pub id: String,
     pub name: String,
@@ -22,19 +22,20 @@ pub struct Post {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum MediaTypes {
+pub enum MediaKind {
     Image,
     Video,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Media {
+    pub kind: MediaKind,
     pub alt: Option<String>,
     pub content: String,
     pub thumbnail: Option<String>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: u64,
     pub name: Option<String>,
@@ -48,7 +49,7 @@ pub struct User {
 
 /// Fetches information from a user
 #[tokio::main]
-pub async fn user(tag: &str, store: Option<Data<Db>>) -> Result<Option<User>> {
+pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<User>> {
     let variables: String = format!("\"username\":\"{}\"", tag);
     let resp = task::spawn_blocking(move || query(&variables, "7394812507255098")).await??;
 
@@ -151,8 +152,12 @@ pub async fn user(tag: &str, store: Option<Data<Db>>) -> Result<Option<User>> {
 
 /// Fetches information from a post
 #[tokio::main]
-pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result<Option<Post>> {
-    // idiomatic way of escaping if the profile doesn't exist
+pub async fn post(
+    tag: &str,
+    id: &str,
+    store: Option<Data<proxy::KeyStore>>,
+) -> Result<Option<Post>> {
+    // Checks whether profile exists
     let variables: String = format!("\"username\":\"{}\"", &tag);
     let resp = task::spawn_blocking(move || query(&variables, "7394812507255098")).await??;
 
@@ -164,11 +169,12 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
         return Ok(None);
     };
 
-    // we need to scrape full id to fetch a post through graphql, since there doesn't seem to be an endpoint to fetch the post from the short id
+    // Since there's no endpoint for getting full IDs out of short ones, fetch it from post URL
     let values = (tag.to_owned(), id.to_owned());
     let fullid =
         task::spawn_blocking(move || crate::utils::post_id(&values.0, &values.1)).await??;
 
+    // Now we can fetch the actual post
     let variables = format!("\"postID\":\"{}\"", &fullid);
     let resp = task::spawn_blocking(move || query(&variables, "26262423843344977")).await??;
 
@@ -178,14 +184,18 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
         return Ok(None);
     }
 
-    // meta wrapping stuff in arrays -.-
-    let node_array = check.unwrap_or(&Value::Null).as_array().unwrap();
+    // Define values for parents and replies
     let mut parents: Option<Vec<String>> = None;
     let mut replies: Option<Vec<String>> = None;
-    let mut post = &Value::Null;
-    let mut post_found: bool = false;
+
     let mut parents_vec: Vec<String> = vec![];
     let mut replies_vec: Vec<String> = vec![];
+
+    let mut post = &Value::Null;
+    let mut post_found: bool = false;
+
+    // Meta wrapping stuff in arrays -.-
+    let node_array = check.unwrap_or(&Value::Null).as_array().unwrap();
 
     for node in node_array {
         let thread_items = node.pointer("/node/thread_items").unwrap_or(&Value::Null);
@@ -210,6 +220,7 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
         }
     }
 
+    // Get the post's body
     let body = post
         .pointer("/caption/text")
         .unwrap()
@@ -217,29 +228,48 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
         .to_owned()
         .unwrap();
 
-    // check media in singular locations
+    // Locations for singular media
     let video_location = post.pointer("/video_versions").unwrap_or(&Value::Null);
     let image_location = post
         .pointer("/image_versions2/candidates")
         .unwrap_or(&Value::Null);
+
+    // Locations for carousel media
+    let carousel_location = post.pointer("/carousel_media").unwrap_or(&Value::Null);
+
+    // Define media variables
     let mut media: Option<Vec<Media>> = None;
     let mut media_vec: Vec<Media> = vec![];
 
-    // check media in carousel
-    let carousel_location = post.pointer("/carousel_media").unwrap_or(&Value::Null);
+    // Check where media could be
     if carousel_location.is_array() {
         let carousel_array = carousel_location.as_array().unwrap();
-        for x in carousel_array {
-            let item = &x
+        for node in carousel_array {
+            // Initial values
+            let mut kind = MediaKind::Image;
+            let content: String;
+            let mut alt: Option<String> = None;
+            let mut thumbnail: Option<String> = None;
+
+	    // Image
+            let node_image_location = &node
                 .pointer("/image_versions2/candidates")
                 .unwrap()
                 .as_array()
                 .unwrap()[0];
-            let media_url = item["url"].as_str().to_owned().unwrap().to_string();
-            let mut media_alt: Option<String> = None;
-            if !x["accessibility_caption"].is_null() {
-                media_alt = Some(
-                    x["accessibility_caption"]
+            let node_video_location = node.pointer("/video_versions").unwrap_or(&Value::Null);
+
+            // CDN URL
+            let image_url = node_image_location["url"]
+                .as_str()
+                .to_owned()
+                .unwrap()
+                .to_string();
+
+            // Alt text
+            if !node["accessibility_caption"].is_null() {
+                alt = Some(
+                    node["accessibility_caption"]
                         .as_str()
                         .to_owned()
                         .unwrap()
@@ -247,38 +277,58 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
                 );
             }
 
-            let mut media = media_url.clone();
+            let mut image = image_url.clone();
 
+            // Store URL in keystore if applicable
             if let Some(store) = store.clone() {
-                media = task::spawn_blocking(move || proxy::store(&media_url, store)).await??;
+                image = task::spawn_blocking(move || proxy::store(&image_url, store)).await??;
+            }
+
+	    // Video
+            if node_video_location.is_array() {
+                let video_array = node_video_location.as_array().unwrap();
+
+                let mut video = video_array[0]["url"]
+                    .as_str()
+                    .to_owned()
+                    .unwrap()
+                    .to_string();
+
+		// Store URL in keystore if applicable
+                if let Some(store) = store.clone() {
+                    video = task::spawn_blocking(move || proxy::store(&video, store)).await??;
+                }
+
+                kind = MediaKind::Video;
+                content = video;
+                thumbnail = Some(image);
+            } else {
+                content = image;
             }
 
             media_vec.push(Media {
-                alt: media_alt,
-                content: media,
-                thumbnail: None,
+                kind,
+                alt,
+                content,
+                thumbnail,
             });
         }
     } else if image_location.is_array() {
-        // defines empty and optional values
+        // Initial values
+        let mut kind = MediaKind::Image;
         let content: String;
         let mut alt: Option<String> = None;
         let mut thumbnail: Option<String> = None;
 
+        // Gets the first image in URL, since it's in the highest quality
         let image_array = image_location.as_array().unwrap();
         let image_url = image_array[0]["url"]
             .as_str()
             .to_owned()
             .unwrap()
             .to_string();
-        let mut image = image_url.clone();
 
-        // stores image URL in proxy if possible
-        if let Some(store) = store.clone() {
-            image = task::spawn_blocking(move || proxy::store(&image_url, store)).await??;
-        }
-
-        // alt text
+        // Alt text
         if post["accessibility_caption"].is_string() {
             alt = Some(
                 post["accessibility_caption"]
@@ -289,7 +339,14 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
             );
         }
 
-        // video
+        let mut image = image_url.clone();
+
+        // Store URL in keystore if applicable
+        if let Some(store) = store.clone() {
+            image = task::spawn_blocking(move || proxy::store(&image_url, store)).await??;
+        }
+
+        // Video
         if video_location.is_array() {
             let video_array = video_location.as_array().unwrap();
             let mut video = video_array[0]["url"]
@@ -300,6 +357,8 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
             if let Some(store) = store.clone() {
                 video = task::spawn_blocking(move || proxy::store(&video, store)).await??;
             }
+
+            kind = MediaKind::Video;
             content = video;
             thumbnail = Some(image);
         } else {
@@ -307,6 +366,7 @@ pub async fn post(tag: &str, id: &str, store: Option<Data<proxy::Db>>) -> Result
         }
 
         media_vec.push(Media {
+            kind,
             alt,
             content,
             thumbnail,

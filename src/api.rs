@@ -7,11 +7,13 @@ use actix_web::{
 use serde::Deserialize;
 use std::thread;
 
+/// Required values for User endpoint
 #[derive(Deserialize)]
 struct UserData {
     tag: String,
 }
 
+/// Required values for Post endpoint
 #[derive(Deserialize)]
 struct PostData {
     tag: String,
@@ -19,7 +21,7 @@ struct PostData {
 }
 
 #[get("/user")]
-async fn user(form: web::Form<UserData>, store: Data<proxy::Db>) -> Result<impl Responder> {
+async fn user(form: web::Form<UserData>, store: Data<proxy::KeyStore>) -> Result<impl Responder> {
     let user = thread::spawn(move || scraping::user(&form.tag, Some(store)))
         .join()
         .expect("Thread panicked");
@@ -27,7 +29,7 @@ async fn user(form: web::Form<UserData>, store: Data<proxy::Db>) -> Result<impl 
 }
 
 #[get("/post")]
-async fn post(form: web::Form<PostData>, store: Data<proxy::Db>) -> Result<impl Responder> {
+async fn post(form: web::Form<PostData>, store: Data<proxy::KeyStore>) -> Result<impl Responder> {
     let post = thread::spawn(move || scraping::post(&form.tag, &form.id, Some(store)))
         .join()
         .expect("Thread panicked");
