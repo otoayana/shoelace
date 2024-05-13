@@ -16,7 +16,6 @@ struct UserData {
 /// Required values for Post endpoint
 #[derive(Deserialize)]
 struct PostData {
-    tag: String,
     id: String,
 }
 
@@ -30,7 +29,7 @@ async fn user(form: web::Form<UserData>, store: Data<proxy::KeyStore>) -> Result
 
 #[get("/post")]
 async fn post(form: web::Form<PostData>, store: Data<proxy::KeyStore>) -> Result<impl Responder> {
-    let post = thread::spawn(move || scraping::post(&form.tag, &form.id, Some(store)))
+    let post = thread::spawn(move || scraping::post(&form.id, Some(store)))
         .join()
         .expect("Thread panicked");
     Ok(web::Json(post.unwrap_or_default()))

@@ -152,28 +152,16 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
 
 /// Fetches information from a post
 #[tokio::main]
-pub async fn post(
-    tag: &str,
-    id: &str,
-    store: Option<Data<proxy::KeyStore>>,
-) -> Result<Option<Post>> {
-    // Checks whether profile exists
-    let variables: String = format!("\"username\":\"{}\"", &tag);
-    let resp = task::spawn_blocking(move || query(&variables, "7394812507255098")).await??;
-
-    let user_info = resp
-        .pointer("/data/xdt_user_by_username")
-        .unwrap_or(&Value::Null);
-
-    if user_info.is_null() {
-        return Ok(None);
-    };
-
+pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Option<Post>> {
     // Since there's no endpoint for getting full IDs out of short ones, fetch it from post URL
-    let values = (tag.to_owned(), id.to_owned());
-    let fullid =
-        task::spawn_blocking(move || crate::utils::post_id(&values.0, &values.1)).await??;
+    let inner_id = id.to_owned();
+    let id_req = task::spawn_blocking(move || crate::utils::post_id(&inner_id)).await??;
 
+    if id_req.is_none() {
+        return Ok(None);
+    }
+
+    let fullid = id_req.unwrap_or(String::new());
     // Now we can fetch the actual post
     let variables = format!("\"postID\":\"{}\"", &fullid);
     let resp = task::spawn_blocking(move || query(&variables, "26262423843344977")).await??;
@@ -220,6 +208,14 @@ pub async fn post(
         }
     }
 
+    // Get the post's author
+    let tag = post
+        .pointer("/user/username")
+        .unwrap()
+        .as_str()
+        .to_owned()
+        .unwrap();
+
     // Get the post's body
     let body = post
         .pointer("/caption/text")
@@ -251,7 +247,7 @@ pub async fn post(
             let mut alt: Option<String> = None;
             let mut thumbnail: Option<String> = None;
 
-	    // Image
+            // Image
             let node_image_location = &node
                 .pointer("/image_versions2/candidates")
                 .unwrap()
@@ -284,7 +280,7 @@ pub async fn post(
                 image = task::spawn_blocking(move || proxy::store(&image_url, store)).await??;
             }
 
-	    // Video
+            // Video
             if node_video_location.is_array() {
                 let video_array = node_video_location.as_array().unwrap();
 
@@ -294,7 +290,7 @@ pub async fn post(
                     .unwrap()
                     .to_string();
 
-		// Store URL in keystore if applicable
+                // Store URL in keystore if applicable
                 if let Some(store) = store.clone() {
                     video = task::spawn_blocking(move || proxy::store(&video, store)).await??;
                 }

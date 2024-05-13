@@ -40,11 +40,11 @@ pub async fn query(variables: &str, doc_id: &str) -> Result<Value> {
 
 /// Returns a full ID from a short ID
 #[tokio::main]
-pub async fn post_id(username: &str, id: &str) -> Result<String> {
+pub async fn post_id(id: &str) -> Result<Option<String>> {
     // Construct a request that Threads' web frontend likes
     let client: reqwest::Client = reqwest::Client::new();
     let resp = client
-        .get(format!("https://www.threads.net/@{}/post/{}", username, id))
+        .get(format!("https://www.threads.net/post/{}", id))
         .header(
             USER_AGENT,
             "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0",
@@ -56,10 +56,14 @@ pub async fn post_id(username: &str, id: &str) -> Result<String> {
         .await?;
 
     // Finds the ID, located in a meta tag containing JSON data
-    let id_location = resp.find("post_id").unwrap();
+    let id_location = resp.find("post_id");
+
+    if id_location.is_none() {
+	return Ok(None)
+    }
 
     // Prepare values to select the ID
-    let mut cur = id_location + 10;
+    let mut cur = id_location.unwrap() + 10;
     let mut curchar = resp.as_bytes()[cur] as char;
     let mut id = String::new();
 
@@ -70,5 +74,5 @@ pub async fn post_id(username: &str, id: &str) -> Result<String> {
         curchar = resp.as_bytes()[cur] as char;
     }
 
-    Ok(id)
+    Ok(Some(id))
 }
