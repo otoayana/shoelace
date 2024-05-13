@@ -309,7 +309,7 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
                 thumbnail,
             });
         }
-    } else if image_location.is_array() {
+    } else if image_location.is_array() && image_location.as_array().unwrap_or(&vec![]).len() != 0 {
         // Initial values
         let mut kind = MediaKind::Image;
         let content: String;
@@ -318,6 +318,7 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
 
         // Gets the first image in URL, since it's in the highest quality
         let image_array = image_location.as_array().unwrap();
+
         let image_url = image_array[0]["url"]
             .as_str()
             .to_owned()
