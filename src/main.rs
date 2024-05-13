@@ -1,10 +1,10 @@
-mod api;
-mod proxy;
-mod scraping;
-mod utils;
+mod backend;
 
-use actix_web::{middleware::{Compat, Logger}, web, App, HttpServer};
-use proxy::KeyStore;
+use actix_web::{
+    middleware::{Compat, Logger},
+    web, App, HttpServer,
+};
+use backend::proxy::KeyStore;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
@@ -18,9 +18,13 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Compat::new(TracingLogger::default()))
-	    .wrap(Logger::default())
-            .service(web::scope("/api/v1").service(api::post).service(api::user))
-            .service(web::scope("/proxy").service(proxy::proxy))
+            .wrap(Logger::default())
+            .service(
+                web::scope("/api/v1")
+                    .service(backend::api::post)
+                    .service(backend::api::user),
+            )
+            .service(web::scope("/proxy").service(backend::proxy::proxy))
             .app_data(db.clone())
     })
     .bind(("127.0.0.1", 8080))?

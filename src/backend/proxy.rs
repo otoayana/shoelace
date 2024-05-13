@@ -1,12 +1,13 @@
 use actix_web::{
     error::{ErrorInternalServerError, ErrorNotFound},
     get,
-    web::{self, Data},
-    HttpResponse,
+    web::{Data, Path},
+    Error, HttpResponse,
 };
 use anyhow::Result;
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use blake2::{Blake2s256, Digest};
+use reqwest::get;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 
@@ -31,7 +32,7 @@ pub async fn store(url: &str, db: Data<KeyStore>) -> Result<String> {
 
 /// Proxies media from Threads
 #[get("/{image}")]
-pub async fn proxy(path: web::Path<String>, db: Data<KeyStore>) -> actix_web::Result<HttpResponse> {
+pub async fn proxy(path: Path<String>, db: Data<KeyStore>) -> actix_web::Result<HttpResponse> {
     // Retrieves value from keystore
     let lock = db.content.lock().await;
     let url = match lock.get(&path.into_inner()) {
@@ -40,17 +41,17 @@ pub async fn proxy(path: web::Path<String>, db: Data<KeyStore>) -> actix_web::Re
     };
 
     // Pipes request to CDN
-    let media = reqwest::get(url)
+    let media = get(url)
         .await
-        .map_err(|_| actix_web::Error::from(ErrorNotFound("media not found")))?
+        .map_err(|_| Error::from(ErrorNotFound("media not found")))?
         .bytes()
         .await
-        .map_err(|_| actix_web::Error::from(ErrorInternalServerError("couldn't serve media")))?;
+        .map_err(|_| Error::from(ErrorInternalServerError("couldn't serve media")))?;
 
     // Identifies MIME type
-    let mime = infer::get(&media).expect("media unidentifiable").to_string();
+    let mime = infer::get(&media)
+        .expect("media unidentifiable")
+        .to_string();
 
-    Ok(HttpResponse::Ok()
-        .content_type(mime)
-        .body(media))
+    Ok(HttpResponse::Ok().content_type(mime).body(media))
 }

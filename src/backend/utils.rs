@@ -59,7 +59,7 @@ pub async fn post_id(id: &str) -> Result<Option<String>> {
     let id_location = resp.find("post_id");
 
     if id_location.is_none() {
-	return Ok(None)
+        return Ok(None);
     }
 
     // Prepare values to select the ID

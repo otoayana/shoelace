@@ -1,6 +1,6 @@
-use crate::{
+use crate::backend::{
     proxy::{self, KeyStore},
-    utils::query,
+    utils::{post_id, query},
 };
 use actix_web::web::Data;
 use anyhow::Result;
@@ -50,9 +50,11 @@ pub struct User {
 /// Fetches information from a user
 #[tokio::main]
 pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<User>> {
+    // Executes request to get user info from the username
     let variables: String = format!("\"username\":\"{}\"", tag);
     let resp = task::spawn_blocking(move || query(&variables, "7394812507255098")).await??;
 
+    // Gets tree location for value
     let parent = resp
         .pointer("/data/xdt_user_by_username")
         .unwrap_or(&Value::Null);
@@ -61,23 +63,31 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
         return Ok(None);
     }
 
+    // Defines empty values
     let mut name: Option<String> = None;
+    let mut pfp: Option<String> = None;
     let mut bio: Option<String> = None;
+    let mut links: Option<Vec<String>> = None;
+    let mut posts: Option<Vec<String>> = None;
 
-    // these variables need their quotes removed
+    // These variables need to be fetched as str, otherwise they'll be wrapped in explicit quote marks
     let quot = vec!["id", "full_name", "biography"];
     let mut unquot: Vec<String> = vec![];
 
-    for x in quot {
-        unquot.push(parent[x].as_str().to_owned().unwrap().to_string())
+    for val in quot {
+        unquot.push(parent[val].as_str().to_owned().unwrap().to_string())
     }
 
-    let mut pfp: Option<String> = None;
+    // Fetches profile picture
     let pfp_location = parent
         .pointer("/hd_profile_pic_versions")
         .unwrap_or(&Value::Null);
+
+    // We do this for safety, but if the request was successful, this should go smoothly.
     if pfp_location.is_array() {
         let pfp_versions = pfp_location.as_array().unwrap();
+
+        // Gets the highest quality version of the profile pic
         pfp = Some(
             pfp_versions[pfp_versions.len() - 1]["url"]
                 .as_str()
@@ -85,6 +95,8 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
                 .unwrap()
                 .to_string(),
         );
+
+        // Stores in keystore if applicable
         if let Some(store) = store.clone() {
             pfp = Some(
                 task::spawn_blocking(move || proxy::store(&pfp.unwrap_or(String::new()), store))
@@ -93,6 +105,7 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
         }
     }
 
+    // Sets name and bio values if applicable
     if !unquot[1].is_empty() {
         name = Some(unquot[1].clone())
     }
@@ -101,14 +114,15 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
         bio = Some(unquot[2].clone())
     }
 
-    // getting additional information through the user ID
+    // Executes request to get additional information through the user ID
     let id_var = format!("\"userID\":\"{}\"", unquot[0]);
     let id_resp = task::spawn_blocking(move || query(&id_var, "25253062544340717")).await??;
 
+    // Gets user's bio links
     let links_parent = id_resp
         .pointer("/data/user/bio_links")
         .unwrap_or(&Value::Null);
-    let mut links: Option<Vec<String>> = None;
+
     if links_parent.is_array() {
         let mut links_vec: Vec<String> = vec![];
         for x in links_parent.as_array().unwrap() {
@@ -117,20 +131,21 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
         links = Some(links_vec);
     }
 
-    // getting user posts
-    let mut posts: Option<Vec<String>> = None;
+    // Executes a request to get the user's posts
     let post_var = format!("\"userID\":\"{}\"", unquot[0]);
     let post_resp = task::spawn_blocking(move || query(&post_var, "7357407954367176")).await??;
+
+    // Gets users' posts
     let edges = post_resp
         .pointer("/data/mediaData/edges")
         .unwrap_or(&Value::Null);
     if edges.is_array() {
         let node_array = edges.as_array().unwrap();
         let mut post_vec: Vec<String> = vec![];
-        for y in node_array {
-            let thread_items = y.pointer("/node/thread_items").unwrap();
-            for x in thread_items.as_array().unwrap() {
-                let cur = x.pointer("/post").unwrap();
+        for node in node_array {
+            let thread_items = node.pointer("/node/thread_items").unwrap();
+            for item in thread_items.as_array().unwrap() {
+                let cur = item.pointer("/post").unwrap();
                 let code = cur["code"].as_str().to_owned().unwrap();
                 post_vec.push(code.to_string());
             }
@@ -155,13 +170,14 @@ pub async fn user(tag: &str, store: Option<Data<KeyStore>>) -> Result<Option<Use
 pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Option<Post>> {
     // Since there's no endpoint for getting full IDs out of short ones, fetch it from post URL
     let inner_id = id.to_owned();
-    let id_req = task::spawn_blocking(move || crate::utils::post_id(&inner_id)).await??;
+    let id_req = task::spawn_blocking(move || post_id(&inner_id)).await??;
 
     if id_req.is_none() {
         return Ok(None);
     }
 
     let fullid = id_req.unwrap_or(String::new());
+
     // Now we can fetch the actual post
     let variables = format!("\"postID\":\"{}\"", &fullid);
     let resp = task::spawn_blocking(move || query(&variables, "26262423843344977")).await??;
@@ -172,13 +188,14 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
         return Ok(None);
     }
 
-    // Define values for parents and replies
+    // Defines values for parents and replies
     let mut parents: Option<Vec<String>> = None;
     let mut replies: Option<Vec<String>> = None;
 
     let mut parents_vec: Vec<String> = vec![];
     let mut replies_vec: Vec<String> = vec![];
 
+    // Defines values for post location
     let mut post = &Value::Null;
     let mut post_found: bool = false;
 
@@ -237,8 +254,9 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
     let mut media: Option<Vec<Media>> = None;
     let mut media_vec: Vec<Media> = vec![];
 
-    // Check where media could be
+    // Check where media could be, if there is any
     if carousel_location.is_array() {
+        // Carousel media
         let carousel_array = carousel_location.as_array().unwrap();
         for node in carousel_array {
             // Initial values
@@ -310,6 +328,7 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
             });
         }
     } else if image_location.is_array() && image_location.as_array().unwrap_or(&vec![]).len() != 0 {
+        // Singular media
         // Initial values
         let mut kind = MediaKind::Image;
         let content: String;
@@ -370,6 +389,7 @@ pub async fn post(id: &str, store: Option<Data<proxy::KeyStore>>) -> Result<Opti
         })
     }
 
+    // If there was media, we add it to the response.
     if media_vec.len() != 0 {
         media = Some(media_vec);
     }
