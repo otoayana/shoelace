@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{name}} - {% endblock title %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/user.css">
+{% endblock head %}
+
+{% macro suffix(num) %}
+	{% if (num / 1000000000) > 1 %}
+		{{ num / 1000000000 | round }}B
+	{% elif (num / 1000000) > 1 %}
+		{{ num / 1000000 | round }}M
+	{% elif (num / 1000) > 1 %}
+		{{ num / 1000 | round }}k
+	{% else %}
+		{{ num }}
+	{% endif %}
+{% endmacro suffix %}
+
+{% block body %}
+<div class="profile">
+	<img class="pfp" src="http://localhost:8080/proxy/{{pfp}}">
+	<div class="info">
+		<h1 class="name">{{name}}</h1>
+		<h4 class="followers">{{ self::suffix(num=followers) }} followers</h4>
+		<p class="bio">{{bio}}</p>
+		{% if links %}
+		{% for item in links %}
+		<a href="{{ item }}">{{ item | trim_start_matches(pat="https://") | trim_end_matches(pat="/") }}</a>
+		{% endfor %}
+		{% endif %}
+	</div>
+</div>
+{% endblock body %}

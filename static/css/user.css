@@ -1,0 +1,58 @@
+.pfp {
+	border-radius: 100%;
+	width: auto;
+	height: auto;
+	max-width: 40%;
+	max-height: 90%;
+	object-fit: cover;
+	/*box-shadow: 0 0 5px black;*/
+	margin-left: 24pt;
+}
+
+.info {
+	margin: 2vw;
+	line-height: 1.25em;
+	width: 60%;
+}
+
+.followers {
+	line-height: 0.75em;
+}
+
+.bio {
+	white-space: pre-wrap;
+}
+
+.profile {
+	display: flex;
+	padding: 16pt;
+	height: 30vh;
+	width: inherit;
+	align-items: center;
+}
+
+@media (max-aspect-ratio: 9/14) {
+	.pfp {
+		height: 150px;
+		aspect-ratio: 1/1;
+	}
+
+	.profile {
+		flex-direction: column;
+		justify-items: left;
+		align-items: start;
+		height: auto;
+		left: 20px;
+	}
+}
+
+@media (min-aspect-ratio: 21/9) {
+	.pfp {
+		height: 150px;
+		aspect-ratio: 1/1;
+	}
+
+	.profile {
+		height: auto;
+	}
+}
