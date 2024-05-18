@@ -1,0 +1,111 @@
+.post {
+	display: flex;
+	flex-direction: column;
+	width: 90%;
+	margin: 28pt 0 28pt 0;
+	align-items: start;
+}
+
+.post-header {
+	display: flex;
+	align-items: center;
+	height: 20pt;
+}
+
+.post-pfp {
+	border-radius: 100%;
+	height: inherit;
+	object-fit: cover;
+}
+
+.post-username {
+	padding-left: 4pt;
+	padding-right: 4pt;
+	color: lightblue;
+}
+
+.post-faint {
+	padding-left: 4pt;
+	padding-right: 4pt;
+	color: #bbb;
+}
+
+.post-header-separator {
+	color: #555;
+}
+
+.post-footer {
+	display: flex;
+	align-items: center;
+	justify-items: center;
+	line-height: 0;
+	margin-top: 12pt;
+}
+
+.post-body {
+	margin-top: 8pt;
+	margin-bottom: 0;
+}
+
+.post-media {
+	display: flex;
+	border-radius: 12pt;
+	width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
+	gap: 4px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin-top: 8pt;
+}
+
+.post-media-row {
+	display: flex;
+	flex-direction: row;
+	overflow: hidden;
+	box-sizing: border-box;
+	gap: inherit;
+	justify-content: center;
+	flex-wrap: nowrap;
+}
+
+.post-media-object {
+	object-fit: cover;
+	overflow: hidden;
+	max-width: 100%;
+	flex: 1;
+}
+
+.heart {
+	width: 16px;
+	max-height: 100%;
+	margin-bottom: 0.5pt;
+}
+
+.post-verified {
+	width: 12px;
+	padding-right: 4pt;
+}
+
+.like-count {
+	margin: 0 6pt 0 0;
+}
+
+@media (prefers-color-scheme: light) {
+	.post-username {
+		color: darkblue;
+	}
+
+	.post-faint {
+		color: #555;
+	}
+}
+
+@media (max-aspect-ratio: 9/14) {
+	.post {
+		margin: 16pt 0 16pt 0;
+	}
+	.post-body {
+		text-align: justify;
+	}
+}

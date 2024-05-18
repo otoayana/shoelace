@@ -1,0 +1,19 @@
+.subpost {
+	background: #00000055;
+	opacity: 85%;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	cursor: pointer;
+}
+
+.subpost-container {
+	display:block;
+}
+
+@media (prefers-color-scheme: light) {
+	.subpost {
+		background: #00000011;
+	}
+}

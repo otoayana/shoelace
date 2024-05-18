@@ -1859,15 +1859,15 @@ dependencies = [
 
 [[package]]
 name = "spools"
-version = "0.3.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "986b341c14e7eb7a688b705d63a6bf3030150b37a0231dc273afbe2d13ddc154"
+checksum = "fbeb9e2a09a51871641a09d52d09f0ba90361663ef573ce505efe255ff2564fe"
 dependencies = [
- "anyhow",
  "rand",
  "reqwest",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 

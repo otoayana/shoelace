@@ -1,34 +1,40 @@
 {% extends "base.html" %}
-{% block title %}{{name}} - {% endblock title %}
+{% import "macros.html" as macros %}
+{% block title %}{{response.name}}{% endblock title %}
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/user.css">
+{% if response.posts | length > 0 %}
+<link rel="stylesheet" href="/static/css/post.css">
+<link rel="stylesheet" href="/static/css/subpost.css">
+{% endif %}
 {% endblock head %}
-
-{% macro suffix(num) %}
-	{% if (num / 1000000000) > 1 %}
-		{{ num / 1000000000 | round }}B
-	{% elif (num / 1000000) > 1 %}
-		{{ num / 1000000 | round }}M
-	{% elif (num / 1000) > 1 %}
-		{{ num / 1000 | round }}k
-	{% else %}
-		{{ num }}
-	{% endif %}
-{% endmacro suffix %}
 
 {% block body %}
 <div class="profile">
-	<img class="pfp" src="http://localhost:8080/proxy/{{pfp}}">
+	<img class="pfp" src="http://localhost:8080/proxy/{{response.pfp}}">
 	<div class="info">
-		<h1 class="name">{{name}}</h1>
-		<h4 class="followers">{{ self::suffix(num=followers) }} followers</h4>
-		<p class="bio">{{bio}}</p>
-		{% if links %}
-		{% for item in links %}
-		<a href="{{ item }}">{{ item | trim_start_matches(pat="https://") | trim_end_matches(pat="/") }}</a>
+		<div class="user-title">
+			<h1 class="name">{{response.name}}</h1>
+			{% if response.verified %}
+			<img class="user-verified" src="/static/img/verified.svg">
+			{% endif %}
+		</div>
+		<p class="followers">@{{request}} • {{ macros::suffix(num=response.followers) }} followers</h4>
+		<p class="bio">{{response.bio}}</p>
+		{% for link in response.links %}
+		<div class="links">
+			<a href="{{ link }}">{{ link | trim_start_matches(pat="http://") |
+				trim_start_matches(pat="https://") |
+				trim_end_matches(pat="/") }}</a>
+		</div>
 		{% endfor %}
-		{% endif %}
 	</div>
 </div>
+{% if response.posts %}
+{% for post in response.posts %}
+<hr>
+{{ macros::subpost(post=post) }}
+{% endfor %}
+{% endif %}
 {% endblock body %}

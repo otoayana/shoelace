@@ -1,0 +1,74 @@
+{% macro suffix(num) %}
+{% if (num / 1000000000) > 1 %}
+{{ num / 1000000000 | round(method="floor", precision=1) }}B
+{% elif (num / 100000000) > 1 %}
+{{ num / 1000000 | round }}M
+{% elif (num / 1000000) > 1 %}
+{{ num / 1000000 | round(method="floor", precision=1) }}M
+{% elif (num / 100000) > 1 %}
+{{ num / 1000 | round }}k
+{% elif (num / 1000) > 1 %}
+{{ num / 1000 | round(method="floor", precision=1) }}k
+{% else %}
+{{ num }}
+{% endif %}
+{% endmacro suffix %}
+
+{% macro post(post, clickable) %}
+<div class="post">
+	<div class="post-header">
+		<img class="post-pfp" src="/proxy/{{post.author.pfp}}">
+		{% if clickable %}
+		<a class="post-username" href="/@{{post.author.username}}">@{{post.author.username}}</a>
+		{% else %}
+		<p class="post-username">@{{post.author.username}}</p>
+		{% endif %}
+		{% if post.author.verified %}
+		<img class="post-verified" src="/static/img/verified.svg">
+		{% endif %}
+		<p class="post-header-separator">•</p>
+		<p class="post-faint">{{ post.date | date }}</p>
+	</div>
+	<p class="post-body">{{post.body}}</p>
+	{% if post.media | length > 0 %}
+	{{ self::media(media=post.media, full=clickable) }}
+	{% endif %}
+	<div class="post-footer">
+		<img class="heart" src="/static/img/heart.svg">
+		<p class="like-count post-faint">{{ macros::suffix(num=post.likes) }}</p>
+	</div>
+</div>
+{% endmacro post %}
+
+{% macro subpost(post) %}
+<div onclick="location.href='/t/{{post.code}}';" class="subpost">
+	{{ self::post(post=post, clickable=false) }}
+</div>
+{% endmacro subpost %}
+
+
+
+{% macro media(media, full) %}
+<div class="post-media">
+	{% for object in media %}
+
+	{% if loop.index is odd and media | length % 2 == 0 or loop.index is odd and not loop.last and loop.index !=
+	media | length - 1%}
+	<div class="post-media-row">
+		{% endif %}
+
+		{% if object.kind == "Image" %}
+		<img class="post-media-object" src="/proxy/{{object.content}}">
+		{% elif object.kind == "Video" and full %}
+		<video controls class="post-media-object" poster="/proxy/{{object.thumbnail}}"
+			src="/proxy/{{object.content}}">
+			{% else %}
+			<img class="post-media-object" src="/proxy/{{object.thumbnail}}">
+			{% endif %}
+
+			{% if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last %}
+	</div>
+	{% endif %}
+	{% endfor %}
+</div>
+{% endmacro media %}

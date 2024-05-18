@@ -17,7 +17,6 @@ pub struct KeyStore {
 }
 
 /// Stores media URLs
-#[tokio::main]
 pub async fn store(url: &str, db: Data<KeyStore>) -> Result<String> {
     // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());

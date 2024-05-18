@@ -40,8 +40,12 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Compat::new(TracingLogger::default()))
             .wrap(Logger::default())
-	    .service(Files::new("/static", concat!(env!("CARGO_MANIFEST_DIR"), "/static")))
-	    .service(front::user)
+            .service(Files::new(
+                "/static",
+                concat!(env!("CARGO_MANIFEST_DIR"), "/static"),
+            ))
+            .service(front::user)
+            .service(front::post)
             .service(web::scope("/api/v1").service(api::post).service(api::user))
             .service(web::scope("/proxy").service(proxy::proxy))
             .app_data(db.clone())
