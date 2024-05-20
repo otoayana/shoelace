@@ -134,10 +134,18 @@ async fn post(post: web::Path<String>, store: Data<proxy::KeyStore>) -> HttpResp
     }
 }
 
-/// Redirect endpoint
+/// HGmepage redirect endpoint
 #[get("/redirect")]
-async fn redirect(request: web::Query<FormRedirect>) -> impl Responder {
+async fn form_redirect(request: web::Query<FormRedirect>) -> impl Responder {
     let values = request.into_inner();
 
     Redirect::to(format!("/@{}", values.value)).temporary()
+}
+
+/// Post redirect endpoint
+#[get("/{_}/post/{path}")]
+async fn post_redirect(request: web::Path<((), String)>) -> impl Responder {
+    let values = request.into_inner();
+
+    Redirect::to(format!("/t/{}", values.1)).permanent()
 }
