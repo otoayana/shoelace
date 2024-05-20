@@ -1,20 +1,15 @@
-body {
-	font-family: Arial, Helvetica, sans-serif;
-	background-color: #101010;
-	color: white;
-	left: 100%;
-	right: 100%;
-	display: flex;
-	margin-top: 8pt;
-	align-items: center;
-	flex-direction: column;
-}
+/* -- base -- */
 
-.shoelace {
+/* Logo */
+.base-shoelace {
 	user-select: none;
+	width: 40pt;
+	margin: 16pt 0;
+	opacity: 0.8;
 }
 
-.container {
+/* Main container */
+.base-container {
 	background-color: #202020;
 	width: 55vw;
 	border-radius: 24px;
@@ -26,6 +21,30 @@ body {
 	overflow: hidden;
 }
 
+/* Footer */
+.base-footer {
+	margin: 12pt 0;
+	font-size: 11pt;
+	opacity: 50%;
+}
+
+/* -- meta -- */
+
+/* Body */
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	background-color: #101010;
+	color: white;
+	left: 100%;
+	right: 100%;
+	display: flex;
+	margin-top: 8pt;
+	align-items: center;
+	flex-direction: column;
+	justify-content: center;
+}
+
+/* Links */
 a {
 	color: lightblue;
 	text-decoration: none;
@@ -35,6 +54,7 @@ a:hover {
 	color: aliceblue;
 }
 
+/* Vertical separator */
 hr {
 	width: 100%;
 	color: #282828;
@@ -42,19 +62,27 @@ hr {
 	border: solid 1px;
 }
 
-@media (max-aspect-ratio: 4/3) {
-	.container {
+/* Text separator */
+.base-inline-separator {
+	user-select: none;
+	color: #666;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 1152px) {
+	.base-container {
 		width: 95vw;
 	}
 }
 
+/* Light mode adjustments */
 @media (prefers-color-scheme: light) {
 	body {
 		background-color: #CFCFCF;
 		color: black;
 	}
 
-	.container {
+	.base-container {
 		background-color: #DFDFDF;
 		box-shadow: 0 0 5px grey;
 	}

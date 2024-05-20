@@ -1,0 +1,18 @@
+{% extends "common/base.html" %}
+
+{% block title %}Home{% endblock title %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/home.css">
+{% endblock head %}
+
+{% block body %}
+<div class="home">
+	<h1 id="home-title">Shoelace</h1>
+	<p id="home-subtitle">a private frontend for Threads</p>
+	<form class="home-form" action="/redirect">
+		<input id="home-value" type="text" name="value" placeholder="Jump to a profile...">
+		<input class="home-button" type="submit" value="Go">
+	</form>
+</div>
+{% endblock body %}

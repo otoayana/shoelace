@@ -1,3 +1,4 @@
+/* Parent container */
 .post {
 	display: flex;
 	flex-direction: column;
@@ -6,47 +7,41 @@
 	align-items: start;
 }
 
+/* Post header */
 .post-header {
 	display: flex;
 	align-items: center;
 	height: 20pt;
 }
 
+/* Author's profile picture */
 .post-pfp {
 	border-radius: 100%;
 	height: inherit;
 	object-fit: cover;
 }
 
+/* Author's usernam */
 .post-username {
 	padding-left: 4pt;
 	padding-right: 4pt;
 	color: lightblue;
 }
 
-.post-faint {
-	padding-left: 4pt;
+/* Verification badge on post */
+.post-verified {
+	width: 12px;
 	padding-right: 4pt;
-	color: #bbb;
+	user-select: none;
 }
 
-.post-header-separator {
-	color: #555;
-}
-
-.post-footer {
-	display: flex;
-	align-items: center;
-	justify-items: center;
-	line-height: 0;
-	margin-top: 12pt;
-}
-
+/* Post's contents */
 .post-body {
 	margin-top: 8pt;
 	margin-bottom: 0;
 }
 
+/* Container for attachments */
 .post-media {
 	display: flex;
 	border-radius: 12pt;
@@ -59,6 +54,7 @@
 	margin-top: 8pt;
 }
 
+/* Container for each row of two objects */
 .post-media-row {
 	display: flex;
 	flex-direction: row;
@@ -69,6 +65,7 @@
 	flex-wrap: nowrap;
 }
 
+/* Single object */
 .post-media-object {
 	object-fit: cover;
 	overflow: hidden;
@@ -76,21 +73,41 @@
 	flex: 1;
 }
 
-.heart {
+/* If not applied, post will cover the viewport's width */
+.post-media-object:fullscreen {
+	object-fit: contain;
+}
+
+/* Includes like count */
+.post-footer {
+	display: flex;
+	align-items: center;
+	justify-items: center;
+	line-height: 0;
+	margin-top: 12pt;
+}
+
+/* Heart icon */
+.post-heart {
 	width: 16px;
 	max-height: 100%;
 	margin-bottom: 0.5pt;
+	user-select: none;
 }
 
-.post-verified {
-	width: 12px;
-	padding-right: 4pt;
-}
-
-.like-count {
+/* Like count */
+.post-like-count {
 	margin: 0 6pt 0 0;
 }
 
+/* Faint text */
+.post-faint {
+	padding-left: 4pt;
+	padding-right: 4pt;
+	color: #bbb;
+}
+
+/* Adjustments for light mode */
 @media (prefers-color-scheme: light) {
 	.post-username {
 		color: darkblue;
@@ -101,10 +118,12 @@
 	}
 }
 
-@media (max-aspect-ratio: 9/14) {
+/* Adjustments for smaller screens */
+@media (max-width: 1152px) {
 	.post {
 		margin: 16pt 0 16pt 0;
 	}
+
 	.post-body {
 		text-align: justify;
 	}

@@ -1,19 +1,34 @@
+/* Darkens the background on subposts */
 .subpost {
-	background: #00000055;
-	opacity: 85%;
+	background: hsla(0, 0%, 0%, 0.333);
 	width: 100%;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	cursor: pointer;
 }
 
-.subpost-container {
-	display:block;
+/* Opens subposts */
+.post-clickable-time {
+	color: #bbb;
 }
 
+.post-clickable-time:hover {
+	color: #ddd;
+}
+
+/* Light mode adjusments */
 @media (prefers-color-scheme: light) {
+	/* Lower alpha channel on background */
 	.subpost {
 		background: #00000011;
+	}
+
+	/* Opens subposts */
+	.post-clickable-time {
+		color: #555;
+	}
+
+	.post-clickable-time:hover {
+		color: #777;
 	}
 }

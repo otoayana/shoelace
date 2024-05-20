@@ -1,0 +1,119 @@
+/* Base container */
+.home {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin: 64pt 0 64pt 0;
+	gap: 10pt;
+	width: 50%;
+}
+
+/* Title */
+#home-title {
+	font-size: 48pt;
+	margin: 0;
+	text-shadow: 0 0 10px #111;
+	user-select: none;
+}
+
+/* Subtitle**/
+#home-subtitle {
+	color: #888;
+	line-height: 0.25em;
+	margin: 0.25em 0;
+	font-size: 14pt;
+	user-select: none;
+}
+
+/* Form container */
+.home-form {
+	display: flex;
+	border-radius: 0;
+	overflow: hidden;
+	align-items: center;
+	height: 30pt;
+	border-radius: 8pt;
+	margin-top: 16pt;
+	width: 100%;
+	box-shadow: 0 0 12px #111;
+}
+
+/* Textbox */
+#home-value {
+	height: inherit;
+	max-height: 100%;
+	flex: 8;
+	border: none;
+	background: #333;
+	font-size: 12pt;
+	padding: 0 10px;
+	color: white;
+}
+
+#home-value:focus {
+	outline-width: 0;
+	outline: none;
+}
+
+#home-value::placeholder {
+	font-style: italic;
+}
+
+/* Go button */
+.home-button {
+	display: flex;
+	align-items: center;
+	background-color: #444;
+	height: inherit;
+	max-height: 100%;
+	padding: 0 10px;
+	flex: 1;
+	color: white;
+	border: none;
+	font-size: 100%;
+	line-height: 0;
+	user-select: none;
+	cursor: pointer;
+	justify-content: center;
+}
+
+.home-button:hover {
+	background-color: #555;
+}
+
+.home-button:active:hover {
+	background-color: #4a4a4a;
+}
+
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+	#home-title {
+		text-shadow: 0 0 4px #666;
+	}
+
+	#home-value {
+		background-color: #bbb;
+		color: black;
+	}
+
+	.home-button {
+		background-color: #bbb;
+		color: black;
+	}
+
+	.home-button:hover {
+		background-color: #c8c8c8;
+	}
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 700px) {
+	.home-value {
+		flex: 1;
+	}
+
+	.home {
+		width: 90%;
+	}
+}

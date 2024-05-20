@@ -1,21 +1,27 @@
-.bio {
-	white-space: pre-wrap;
-	margin: 3% 0 1% 0;
+/* Parent container */
+.user-profile {
+	display: flex;
+	padding: 16pt;
+	padding-top: 22pt;
+	height: auto;
+	width: inherit;
+	align-items: center;
 }
 
-.followers {
-	line-height: 0.75em;
-	margin-top: 4%;
-	margin-bottom: 0;
-	color: #bbb;
+/* Profile picture*/
+.user-pfp {
+	border-radius: 100%;
+	width: auto;
+	height: auto;
+	max-width: 25%;
+	object-fit: cover;
+	margin-left: 24pt;
+	box-shadow: 0 0 5px #111;
 }
 
-.links {
-	margin: 0;
-}
-
-.info {
-	margin: 2vw;
+/* Infobox container */
+.user-info {
+	margin: 2vh 1vw;
 	line-height: 1.25em;
 	width: 100%;
 	display: flex;
@@ -24,61 +30,68 @@
 	height: 100%;
 }
 
-.name {
-	margin: 0;
-}
-
-.pfp {
-	border-radius: 100%;
-	width: auto;
-	height: auto;
-	max-width: 30%;
-	object-fit: cover;
-	margin-left: 24pt;
-	box-shadow: 0 0 5px #111;
-}
-
-.profile {
-	display: flex;
-	padding: 16pt;
-	padding-top: 20pt;
-	height: auto;
-	width: inherit;
-	align-items: center;
-}
-
+/* Display name container */
 .user-title {
 	display: flex;
 	flex-flow: row;
 	align-items: center;
-	margin-top: 2%;
 	gap: 6pt;
 	width: 100%;
 }
 
-.user-verified {
-	width: 20pt;
+/* Dispĺay name */
+.user-name {
+	margin: 0 0 0 0;
 }
 
-@media (max-aspect-ratio: 9/14) {
-	.container {
+/* Verification badge */
+.user-verified {
+	max-width: 1.25em;
+}
+
+/* Username, follower count*/
+.user-details {
+	line-height: 0.75em;
+	margin-top: 3%;
+	margin-bottom: 0;
+	color: #bbb;
+}
+
+/* User bio */
+.user-bio {
+	white-space: pre-wrap;
+	margin: 3% 0 1% 0;
+}
+
+/* Links, if any */
+.user-links {
+	margin: 0;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 700px) {
+	.base-container {
 		align-items: start;
 	}
-	
-	.name {
+
+	/* Reduce the font size */
+	.user-name {
 		line-height: 1em;
 		font-size: 18pt;
 	}
 
-	.pfp {
+	/* If not done, the profile pic will look misaligned */
+	.user-pfp {
 		margin-left: 0;
 	}
 
+	/* Helps align the verification badge to the display name */
 	.user-verified {
-		width: 16pt;
+		max-height: 1em;
 	}
 
-	.profile {
+	/* Vertical profile */
+	.user-profile {
 		flex-direction: column;
 		justify-items: left;
 		align-items: start;
@@ -87,8 +100,10 @@
 	}
 }
 
+/* Light mode adjustments */
 @media (prefers-color-scheme: light) {
-	.followers {
+	/* Make the user details visible */
+	.user-details {
 		color: #555;
 	}
 }

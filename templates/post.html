@@ -1,5 +1,5 @@
-{% extends "base.html" %}
-{% import "macros.html" as macros %}
+{% extends "common/base.html" %}
+{% import "common/macro.html" as macro %}
 {% block title %}Post by @{{response.author.username}}{% endblock title %}
 
 {% block head %}
@@ -11,14 +11,14 @@
 
 {% block body %}
 {% for post in response.parents %}
-{{ macros::subpost(post=post) }}
+{{ macro::subpost(post=post) }}
 <hr>
 {% endfor %}
 
-{{ macros::post(post=response, clickable=true) }}
+{{ macro::post(post=response, clickable=false) }}
 
 {% for post in response.replies %}
 <hr>
-{{ macros::subpost(post=post) }}
+{{ macro::subpost(post=post) }}
 {% endfor %}
 {% endblock body %}

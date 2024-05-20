@@ -1,0 +1,26 @@
+{% import "common/macro.html" as macro %}
+
+<!DOCTYPE html>
+
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="/static/css/main.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="/static/img/shoelace.svg" type="image/x-icon">
+	<title>{% block title %}{% endblock title %} • Shoelace</title>
+	{% block head %}
+	{% endblock head %}
+</head>
+
+<body>
+	<a href="/"><img src="/static/img/shoelace.svg" alt="Home" class="base-shoelace"></a>
+
+	<div class="base-container">
+		{% block body %}
+		{% endblock body %}
+	</div>
+
+	<div class="base-footer">{% if time %}{{ macro::time_suffix(num=time) }}<span class="base-inline-separator"> • </span>{% endif %}<a
+			href="https://sr.ht/~nixgoat/shoelace">hub</a><span class="base-inline-separator"> • </span><a
+			href="https://liberapay.com/nixgoat">donate</a></div>
+</body>
