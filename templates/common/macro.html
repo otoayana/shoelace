@@ -26,6 +26,25 @@
 {% endif %}
 {% endmacro suffix %}
 
+{% macro url(body) %}
+{% set ats = body | linebreaksbr | replace(from="<br>", to="<br> ") | split(pat=' ') %}
+{% set new_body = "" %}
+{% for string in ats %}
+	{% if string is containing("@") %}
+		{% set at_tagged = '<a href="/' ~ string ~ '">' ~ string ~ '</a>' %}
+		{% set_global new_body = new_body ~ at_tagged ~ " " %}
+	{% elif string is containing("://") %}
+		{% set url_string = string | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_start_matches(pat="www.") %}
+		{% set url_tagged = '<a href="' ~ string ~ '">' ~ url_string ~ '</a>' %}
+		{% set_global new_body = new_body ~ url_tagged ~ " " %}
+	{% else %}
+		{% set_global new_body = new_body ~ string ~ " " %}
+	{% endif %}
+{% endfor %}
+{{new_body | safe }}
+{% endmacro url %}
+
+
 {% macro post(post, clickable) %}
 <div class="post">
 	<div class="post-header">
@@ -39,7 +58,7 @@
 				href="/t/{{post.code}}">{% endif %}{{
 				post.date | date }}{% if clickable and post.code %}</a>{% endif %}</p>
 	</div>
-	<p class="post-body">{{post.body}}</p>
+	<p class="post-body">{{ self::url(body=post.body) }}</p>
 	{% if post.media | length > 0 %}
 	{{ self::media(media=post.media, subpost=clickable) }}
 	{% endif %}
