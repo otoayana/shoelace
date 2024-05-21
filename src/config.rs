@@ -5,10 +5,10 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-pub struct Settings {
-	pub server: Server,
-	pub endpoint: Endpoint,
-	proxy: Proxy,
+pub (crate) struct Settings {
+	pub (crate) server: Server,
+	pub (crate) endpoint: Endpoint,
+	pub (crate) proxy: Proxy,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,7 +49,7 @@ pub struct RocksDB {
 	pub (crate) path: String
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub enum ProxyModes {
 	None,
 	Internal,

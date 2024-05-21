@@ -13,15 +13,19 @@ use actix_web::{
     middleware::{Compat, Logger},
     web, App, HttpServer,
 };
-use config::Settings;
+use config::{ProxyModes, Redis, Settings};
 use std::collections::HashMap;
 use tera::Tera;
 use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
 
-pub (crate) struct ShoelaceData {
-	pub (crate) internal_store: Option<Mutex<HashMap<String, String>>>,
-	pub (crate) base_url: String,
+#[allow(unused)]
+pub(crate) struct ShoelaceData {
+    pub(crate) keystore_type: config::ProxyModes,
+    pub(crate) internal_store: Option<Mutex<HashMap<String, String>>>,
+    pub(crate) redis: Option<Redis>,
+    pub(crate) rocksdb: Option<rocksdb::DB>,
+    pub(crate) base_url: String,
 }
 
 // Import templates
@@ -55,7 +59,16 @@ async fn main() -> std::io::Result<()> {
     }
 
     let data = web::Data::new(ShoelaceData {
-        internal_store: Some(Mutex::new(HashMap::new())),
+        keystore_type: config.proxy.mode.to_owned(),
+        rocksdb: match &config.proxy.mode {
+		ProxyModes::RocksDB => Some(rocksdb::DB::open_default(config.proxy.rocksdb.unwrap().path).expect("couldn't open database")),
+		_ => None,
+	},
+        redis: config.proxy.redis,
+        internal_store: match &config.proxy.mode {
+		ProxyModes::Internal => Some(Mutex::new(HashMap::new())),
+		_ => None,
+	},
         base_url: config.server.base_url,
     });
 

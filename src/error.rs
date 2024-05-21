@@ -30,8 +30,12 @@ pub enum ShoelaceError {
 pub enum ProxyError {
     #[error("proxy is unavailable")]
     NoProxy,
+    #[error("rocksdb error: {0}")]
+    RocksDBError(#[from] rocksdb::Error),
     #[error("couldn't find object")]
     ObjectNotFound,
+    #[error("couldn't retrieve object")]
+    CannotRetrieve,
     #[error("endpoint error: {0}")]
     EndpointError(#[from] reqwest::Error),
     #[error("unable to identify mime type")]
