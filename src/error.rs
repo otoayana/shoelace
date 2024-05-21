@@ -76,16 +76,16 @@ impl error::ResponseError for ShoelaceError {
                     status_code: self.status_code().as_u16().to_string(),
                     error: self.to_string(),
                 })
-                .map_err(|err| ShoelaceError::TemplateError(err))
+                .map_err(ShoelaceError::TemplateError)
                 .unwrap(),
             )
-            .map_err(|err| ShoelaceError::TemplateError(err));
+            .map_err(ShoelaceError::TemplateError);
 
         if let Ok(template_body) = template {
             body = template_body;
             status_code = self.status_code()
         } else {
-            body = format!("{}\n{}", template.unwrap_err(), self.to_string());
+            body = format!("{}\n{}", template.unwrap_err(), self);
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
 

@@ -23,7 +23,7 @@ async fn media_store(media: &mut Media, store: Data<KeyStore>) {
     media.content = proxy::store(&media.content, store.to_owned()).await;
 
     if let Some(thumbnail) = &media.thumbnail {
-        media.thumbnail = Some(proxy::store(&thumbnail, store.to_owned()).await);
+        media.thumbnail = Some(proxy::store(thumbnail, store.to_owned()).await);
     }
 }
 
@@ -35,7 +35,7 @@ pub async fn user(data: UserData, store: Data<KeyStore>) -> Result<User, Shoelac
 
     // Proxy user's profile picture
     let pfp = proxy::store(resp.pfp.as_str(), store.to_owned()).await;
-    resp.pfp = pfp.clone();
+    resp.pfp.clone_from(&pfp);
 
     // Clone user's posts to vector
     let mut posts = resp.posts.clone();
@@ -43,7 +43,7 @@ pub async fn user(data: UserData, store: Data<KeyStore>) -> Result<User, Shoelac
     // Store objects in previous vector
     for item in &mut posts {
         // All of these posts should have the same profile picture
-        item.author.pfp = pfp.clone();
+        item.author.pfp.clone_from(&pfp);
 
         // Objects
         for object in &mut item.media {

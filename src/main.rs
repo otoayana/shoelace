@@ -21,14 +21,14 @@ use tracing_actix_web::TracingLogger;
 // Import templates
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        let tera = match Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
+        
+        match Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
             Ok(t) => t,
             Err(e) => {
                 println!("Parsing error(s): {}", e);
                 ::std::process::exit(1);
             }
-        };
-        tera
+        }
     };
 }
 
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
             .service(front::redirect)
             .service(web::scope("/api/v1").service(api::post).service(api::user))
             .service(web::scope("/proxy").service(proxy::proxy))
-	    .default_service(web::to(|| error::not_found()))
+	    .default_service(web::to(error::not_found))
             .app_data(db.clone())
     })
     .bind(("127.0.0.1", 8080))?
