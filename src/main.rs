@@ -13,7 +13,7 @@ use actix_web::{
     middleware::{Compat, Logger},
     web, App, HttpServer,
 };
-use config::{ProxyModes, Redis, Settings};
+use config::{ProxyModes, Settings};
 use std::collections::HashMap;
 use tera::Tera;
 use tokio::sync::Mutex;
@@ -23,7 +23,7 @@ use tracing_actix_web::TracingLogger;
 pub(crate) struct ShoelaceData {
     pub(crate) keystore_type: config::ProxyModes,
     pub(crate) internal_store: Option<Mutex<HashMap<String, String>>>,
-    pub(crate) redis: Option<Redis>,
+    pub(crate) redis: Option<redis::aio::MultiplexedConnection>,
     pub(crate) rocksdb: Option<rocksdb::DB>,
     pub(crate) base_url: String,
 }
@@ -61,14 +61,27 @@ async fn main() -> std::io::Result<()> {
     let data = web::Data::new(ShoelaceData {
         keystore_type: config.proxy.mode.to_owned(),
         rocksdb: match &config.proxy.mode {
-		ProxyModes::RocksDB => Some(rocksdb::DB::open_default(config.proxy.rocksdb.unwrap().path).expect("couldn't open database")),
-		_ => None,
-	},
-        redis: config.proxy.redis,
+            ProxyModes::RocksDB => Some(
+                rocksdb::DB::open_default(config.proxy.rocksdb.unwrap().path)
+                    .expect("couldn't open database"),
+            ),
+            _ => None,
+        },
+        redis: match &config.proxy.mode {
+            ProxyModes::Redis => Some({
+                let client = redis::Client::open(config.proxy.redis.unwrap().uri).unwrap();
+
+                client
+                    .get_multiplexed_async_connection()
+                    .await
+                    .expect("couldn't connect to redis")
+            }),
+            _ => None,
+        },
         internal_store: match &config.proxy.mode {
-		ProxyModes::Internal => Some(Mutex::new(HashMap::new())),
-		_ => None,
-	},
+            ProxyModes::Internal => Some(Mutex::new(HashMap::new())),
+            _ => None,
+        },
         base_url: config.server.base_url,
     });
 

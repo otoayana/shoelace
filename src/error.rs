@@ -32,6 +32,8 @@ pub enum ProxyError {
     NoProxy,
     #[error("rocksdb error: {0}")]
     RocksDBError(#[from] rocksdb::Error),
+    #[error("redis error: {0}")]
+    RedisError(#[from] redis::RedisError),
     #[error("couldn't find object")]
     ObjectNotFound,
     #[error("couldn't retrieve object")]

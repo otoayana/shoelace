@@ -1,11 +1,31 @@
 [server]
+# Set the address Shoelace will listen on
 listen="127.0.0.1"
+# Set the port Shoelace will bind to
 port=8080
+# Set where instance is located at. Needed for accurate proxied media locations in API
 base_url="https://example.com"
 
 [endpoint]
+# Toggle the frontend
 frontend=true
+# Toggle the API
 api=true
 
 [proxy]
-mode="internal"
+# Proxy backend. Valid options are:
+# - none: Disable the media proxy. Not recommended if frontend is enabled
+# - internal: Stores values in memory. Destroys itself after stopping Shoelace.
+# - rocksdb: Stores values in a RocksDB database. Recommended.
+# - redis: Stores values in a Redis server. Higher performance. Requires additional software
+backend="rocksdb"
+
+[proxy.redis]
+# URI for Redis server.
+# - TCP: redis://[<username>][:<password>@]<hostname>[:port][/<db>]
+# - Unix socket: redis+unix:///<path>[?db=<db>[&pass=<password>][&user=<username>]]
+# uri="redis://127.0.0.1/"
+
+[proxy.rocksdb]
+# Sets where the database will be stored at
+path="./db"

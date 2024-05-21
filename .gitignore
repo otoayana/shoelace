@@ -1,2 +1,4 @@
 /target
 shoelace.toml
+# Default location for RocksDB database
+/db

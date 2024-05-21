@@ -1,10 +1,10 @@
+use crate::{config::ProxyModes, error::ProxyError, ShoelaceData};
 use actix_web::{
     get,
     web::{Data, Path},
     HttpResponse,
 };
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
-use crate::{config::ProxyModes, error::ProxyError, ShoelaceData};
 use blake2::{Blake2s256, Digest};
 use reqwest::get;
 
@@ -34,7 +34,19 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, ProxyE
                 Ok(url.to_string())
             }
         }
-        ProxyModes::Redis => todo!(),
+        ProxyModes::Redis => {
+            if let Some(red) = &mut &data.redis {
+                let mut con = red.to_owned();
+
+                redis::cmd("SET")
+                    .arg(&[hashstring, url.to_string()])
+                    .query_async(&mut con)
+                    .await?;
+                Ok(hash_url)
+            } else {
+                Ok(url.to_string())
+            }
+        }
         ProxyModes::None => Ok(url.to_string()),
     }
 }
@@ -75,8 +87,19 @@ pub async fn proxy(
                 return Err(ProxyError::NoProxy);
             }
         }
-        ProxyModes::Redis => todo!(),
-        ProxyModes::None => todo!(),
+        ProxyModes::Redis => {
+            if let Some(red) = &mut &data.redis {
+                let mut con = red.to_owned();
+
+                url = redis::cmd("GET")
+                    .arg(path.into_inner())
+                    .query_async(&mut con)
+                    .await?;
+            } else {
+                return Err(ProxyError::NoProxy);
+            }
+        }
+        ProxyModes::None => return Err(ProxyError::NoProxy),
     }
 
     // Pipes request to CDN
