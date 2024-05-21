@@ -1,7 +1,7 @@
 use std::time::SystemTimeError;
 
 use actix_web::{
-    error, get, http::{header::ContentType, StatusCode}, HttpResponse, ResponseError
+    error, http::{header::ContentType, StatusCode}, HttpResponse, ResponseError
 };
 use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
