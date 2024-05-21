@@ -1,8 +1,10 @@
 use crate::{
     error::ShoelaceError,
-    proxy::{self}, ShoelaceData,
+    proxy::{self},
+    ShoelaceData,
 };
 use actix_web::web::Data;
+use futures::future::join_all;
 use serde::Deserialize;
 use spools::{Media, Post, Threads, User};
 
@@ -37,22 +39,20 @@ pub async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Sho
     let pfp = proxy::store(resp.pfp.as_str(), store.to_owned()).await;
     resp.pfp.clone_from(&pfp);
 
-    // Clone user's posts to vector
-    let mut posts = resp.posts.clone();
-
-    // Store objects in previous vector
-    for item in &mut posts {
+    // Proxy posts
+    join_all(resp.posts.iter_mut().map(|sub| {
         // All of these posts should have the same profile picture
-        item.author.pfp.clone_from(&pfp);
+        sub.author.pfp.clone_from(&pfp);
 
         // Objects
-        for object in &mut item.media {
-            media_store(object, store.to_owned()).await
+        async {
+            join_all(sub.media.iter_mut().map(|object| async {
+                media_store(object, store.to_owned()).await;
+            }))
+            .await;
         }
-    }
-
-    // Save proxied media in response
-    resp.posts = posts;
+    }))
+    .await;
 
     Ok(resp)
 }
@@ -66,46 +66,37 @@ pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Sho
     // Proxy author's profile picture
     resp.author.pfp = proxy::store(&resp.author.pfp, store.to_owned()).await;
 
-    // Clone post's media to a mutable vector
-    let mut media = resp.media;
+    // Oroxy post's media
+    join_all(resp.media.iter_mut().map(|object| async {
+        media_store(object, store.to_owned()).await;
+    }))
+    .await;
 
-    // Store objects in previous vector
-    for object in &mut media {
-        media_store(object, store.to_owned()).await
-    }
-
-    // Get post parents
-    let mut parents = resp.parents.clone();
-
-    // Store media in parents
-    for item in &mut parents {
+    // Proxy media in parents
+    join_all(resp.parents.iter_mut().map(|sub| async {
         // Profile picture
-        item.author.pfp = proxy::store(&item.author.pfp, store.to_owned()).await;
+        sub.author.pfp = proxy::store(&sub.author.pfp, store.to_owned()).await;
 
         // Objects
-        for object in &mut item.media {
-            media_store(object, store.to_owned()).await
-        }
-    }
+        join_all(sub.media.iter_mut().map(|object| async {
+            media_store(object, store.to_owned()).await;
+        }))
+        .await;
+    }))
+    .await;
 
-    // Get post replies
-    let mut replies = resp.replies.clone();
-
-    // Store media in replies
-    for item in &mut replies {
+    // Proxy media in replies
+    join_all(resp.replies.iter_mut().map(|sub| async {
         // Profile picture
-        item.author.pfp = proxy::store(&item.author.pfp, store.to_owned()).await;
+        sub.author.pfp = proxy::store(&sub.author.pfp, store.to_owned()).await;
 
         // Objects
-        for attachment in &mut item.media {
-            media_store(attachment, store.to_owned()).await
-        }
-    }
-
-    // Save proxied media in response
-    resp.media = media;
-    resp.parents = parents;
-    resp.replies = replies;
+        join_all(sub.media.iter_mut().map(|object| async {
+            media_store(object, store.to_owned()).await;
+        }))
+        .await;
+    }))
+    .await;
 
     Ok(resp)
 }

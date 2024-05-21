@@ -15,6 +15,7 @@ base64 = "0.22"
 blake2 = "0.10"
 clap = { version = "4.5.4", features = ["derive"] }
 config = "0.14"
+futures = "0.3.30"
 infer = "0.15"
 lazy_static = "1.4"
 reqwest = "0.12"
