@@ -1,7 +1,9 @@
 use std::time::SystemTimeError;
 
 use actix_web::{
-    error, http::{header::ContentType, StatusCode}, HttpResponse, ResponseError
+    error,
+    http::{header::ContentType, StatusCode},
+    HttpResponse, ResponseError,
 };
 use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
@@ -26,6 +28,8 @@ pub enum ShoelaceError {
 /// Defines proxy errors
 #[derive(Error, Debug)]
 pub enum ProxyError {
+    #[error("proxy is unavailable")]
+    NoProxy,
     #[error("couldn't find object")]
     ObjectNotFound,
     #[error("endpoint error: {0}")]
@@ -59,7 +63,7 @@ impl error::ResponseError for ProxyError {
                     StatusCode::BAD_GATEWAY
                 }
             }
-            Self::MimeError => StatusCode::INTERNAL_SERVER_ERROR,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -105,6 +109,10 @@ impl error::ResponseError for ShoelaceError {
 }
 
 /// Handles non-existant routes
-pub async fn not_found() -> HttpResponse {
-	ShoelaceError::NotFound.error_response()
+pub async fn not_found(front: bool) -> HttpResponse {
+    if front {
+        ShoelaceError::NotFound.error_response()
+    } else {
+        HttpResponse::NotFound().body("not found")
+    }
 }

@@ -59,7 +59,7 @@ trim_start_matches(pat="www.") -%}
 {% macro post(post, clickable) %}
 <div class="post">
 	<div class="post-header">
-		<img class="post-pfp" src="/proxy/{{post.author.pfp}}">
+		<img class="post-pfp" src="{{post.author.pfp}}">
 		<a class="post-username" href="/@{{post.author.username}}">@{{post.author.username}}</a>
 		{%- if post.author.verified -%}
 		<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
@@ -98,15 +98,15 @@ trim_start_matches(pat="www.") -%}
 		{%- if object.kind == "Image" -%}
 
 		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			src="/proxy/{{object.content}}">
+			src="{{object.content}}">
 
 		{%- elif object.kind == "Video" and not subpost -%}
 		<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			poster="/proxy/{{object.thumbnail}}" src="/proxy/{{object.content}}">
+			poster="{{object.thumbnail}}" src="{{object.content}}">
 		</video>
 		{%- else -%}
 		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			src="/proxy/{{object.thumbnail}}" alt="{{object.alt}}">
+			src="{{object.thumbnail}}" alt="{{object.alt}}">
 		{%- endif -%}
 		{%- if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last -%}
 	</div>

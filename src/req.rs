@@ -1,6 +1,6 @@
 use crate::{
     error::ShoelaceError,
-    proxy::{self, KeyStore},
+    proxy::{self}, ShoelaceData,
 };
 use actix_web::web::Data;
 use serde::Deserialize;
@@ -19,7 +19,7 @@ pub struct PostData {
 }
 
 /// Common function for storing media structs
-async fn media_store(media: &mut Media, store: Data<KeyStore>) {
+async fn media_store(media: &mut Media, store: Data<ShoelaceData>) {
     media.content = proxy::store(&media.content, store.to_owned()).await;
 
     if let Some(thumbnail) = &media.thumbnail {
@@ -28,7 +28,7 @@ async fn media_store(media: &mut Media, store: Data<KeyStore>) {
 }
 
 /// Fetches a user, and proxies its media
-pub async fn user(data: UserData, store: Data<KeyStore>) -> Result<User, ShoelaceError> {
+pub async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, ShoelaceError> {
     // Fetch user
     let thread = Threads::new()?;
     let mut resp = thread.fetch_user(&data.tag).await?;
@@ -58,7 +58,7 @@ pub async fn user(data: UserData, store: Data<KeyStore>) -> Result<User, Shoelac
 }
 
 /// Fetches a post, and proxies its media
-pub async fn post(post: PostData, store: Data<KeyStore>) -> Result<Post, ShoelaceError> {
+pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, ShoelaceError> {
     // Fetch post
     let thread = Threads::new()?;
     let mut resp = thread.fetch_post(&post.id).await?;

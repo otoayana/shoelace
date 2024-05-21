@@ -1,4 +1,4 @@
-use crate::{error::ShoelaceError, proxy, req, TEMPLATES};
+use crate::{error::ShoelaceError, req, ShoelaceData, TEMPLATES};
 use actix_web::{
     get,
     web::{self, Data, Redirect},
@@ -51,7 +51,7 @@ async fn home() -> Result<HttpResponse, ShoelaceError> {
 #[get("/@{user}")]
 async fn user(
     user: web::Path<String>,
-    store: Data<proxy::KeyStore>,
+    store: Data<ShoelaceData>,
 ) -> Result<HttpResponse, ShoelaceError> {
     let start_time = time_log()?;
 
@@ -76,7 +76,7 @@ async fn user(
 #[get("/t/{post}")]
 async fn post(
     post: web::Path<String>,
-    store: Data<proxy::KeyStore>,
+    store: Data<ShoelaceData>,
 ) -> Result<HttpResponse, ShoelaceError> {
     let start_time = time_log()?;
 

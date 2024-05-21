@@ -1,4 +1,4 @@
-use crate::{error::ShoelaceError, proxy, req};
+use crate::{error::ShoelaceError, req, ShoelaceData};
 use actix_web::{
     error::{ErrorInternalServerError, ErrorNotFound},
     get,
@@ -11,7 +11,7 @@ use spools::SpoolsError;
 #[get("/user")]
 async fn user(
     form: web::Form<req::UserData>,
-    store: Data<proxy::KeyStore>,
+    store: Data<ShoelaceData>,
 ) -> Result<impl Responder> {
     // Fetch user
     let resp = req::user(form.into_inner(), store).await;
@@ -37,7 +37,7 @@ async fn user(
 #[get("/post")]
 async fn post(
     form: web::Form<req::PostData>,
-    store: Data<proxy::KeyStore>,
+    store: Data<ShoelaceData>,
 ) -> Result<impl Responder> {
     let resp = req::post(form.into_inner(), store).await;
 

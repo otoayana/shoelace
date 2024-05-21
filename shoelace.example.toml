@@ -1,0 +1,11 @@
+[server]
+listen="127.0.0.1"
+port=8080
+base_url="https://example.com"
+
+[endpoint]
+frontend=true
+api=true
+
+[proxy]
+mode="internal"
