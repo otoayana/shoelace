@@ -33,9 +33,18 @@
 {%- for string in ats -%}
 
 {%- if string is containing("@") -%}
-
-{%- set at_tagged = '<a href="/' ~ string ~ '">' ~ string ~ '</a>' -%}
-{%- set_global new_body = new_body ~ at_tagged ~ " " -%}
+{%- if string is ending_with("!")%}
+{%- set at = string | trim_end_matches(pat="!") -%}
+{%- set rest = "!" -%}
+{%- elif string is ending_with("?") -%}
+{%- set at = string | trim_end_matches(pat="?") -%}
+{%- set rest = "?" -%}
+{%- else -%}
+{%- set at = string -%}
+{%- set rest = "" -%}
+{%- endif -%}
+{%- set at_tagged = '<a href="/' ~ at ~ '">' ~ at ~ '</a>' -%}
+{%- set_global new_body = new_body ~ at_tagged ~ rest ~ " " -%}
 
 {%- elif string is containing("://") -%}
 
@@ -97,16 +106,15 @@ trim_start_matches(pat="www.") -%}
 
 		{%- if object.kind == "Image" -%}
 
-		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			src="{{object.content}}">
+		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.content}}">
 
 		{%- elif object.kind == "Video" and not subpost -%}
 		<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
 			poster="{{object.thumbnail}}" src="{{object.content}}">
 		</video>
 		{%- else -%}
-		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			src="{{object.thumbnail}}" alt="{{object.alt}}">
+		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.thumbnail}}"
+			alt="{{object.alt}}">
 		{%- endif -%}
 		{%- if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last -%}
 	</div>
