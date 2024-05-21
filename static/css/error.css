@@ -1,0 +1,23 @@
+/* Error container */
+.error {
+	padding: 48pt;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* Error code */
+.error-code {
+	font-size: 48pt;
+	margin: 0;
+	text-shadow: 0 0 10px #111;
+}
+
+/* Error description */
+.error-description {
+	color: #888;
+	line-height: 1em;
+	margin-top: 0.75em;
+	margin-bottom: 0;
+	font-size: 14pt;
+}

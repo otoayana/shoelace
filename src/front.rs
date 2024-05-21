@@ -1,16 +1,15 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
-use crate::{proxy, req, TEMPLATES};
+use crate::{error::ShoelaceError, proxy, req, TEMPLATES};
 use actix_web::{
-    error::ErrorInternalServerError,
     get,
     web::{self, Data, Redirect},
-    HttpResponse, Responder,
+    HttpResponse, Responder, ResponseError,
 };
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
+use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 use tera::Context;
 
+/// For user template
 #[derive(Debug, Deserialize, Serialize)]
 struct UserResponse {
     request: String,
@@ -18,18 +17,21 @@ struct UserResponse {
     time: u128,
 }
 
+/// For post template
 #[derive(Debug, Deserialize, Serialize)]
 struct PostResponse {
     response: Post,
     time: u128,
 }
 
+/// Used by the find form
 #[derive(Debug, Deserialize)]
-struct FormRedirect {
+struct Find {
     value: String,
 }
 
-fn time_log() -> anyhow::Result<u128> {
+/// Logs how much it takes for a request to finish
+fn time_log() -> Result<u128, SystemTimeError> {
     let start = SystemTime::now();
 
     let since_the_epoch = start.duration_since(UNIX_EPOCH)?.as_millis();
@@ -37,34 +39,25 @@ fn time_log() -> anyhow::Result<u128> {
     Ok(since_the_epoch)
 }
 
-/// Homepage
+/// Home
 #[get("/")]
-async fn home() -> HttpResponse {
-    let resp = TEMPLATES.render("home.html", &Context::new()).map_err(|x| {
-        actix_web::error::ErrorInternalServerError(format!("could not render template: {}", x))
-    });
+async fn home() -> Result<HttpResponse, ShoelaceError> {
+    let resp = TEMPLATES.render("home.html", &Context::new())?;
 
-    match resp {
-        Ok(body) => HttpResponse::Ok().body(body),
-        Err(body) => HttpResponse::InternalServerError().body(body.to_string()),
-    }
+    Ok(HttpResponse::Ok().body(resp))
 }
 
-/// User endpoint
+/// User frontend
 #[get("/@{user}")]
-async fn user(user: web::Path<String>, store: Data<proxy::KeyStore>) -> HttpResponse {
-    let start_time = time_log()
-        .map_err(|_| ErrorInternalServerError("coudln't fetch time"))
-        .unwrap();
+async fn user(
+    user: web::Path<String>,
+    store: Data<proxy::KeyStore>,
+) -> Result<HttpResponse, ShoelaceError> {
+    let start_time = time_log()?;
 
-    let req = req::user(req::UserData { tag: user.clone() }, store)
-        .await
-        .map_err(|_| ErrorInternalServerError("request failed"))
-        .unwrap();
+    let req = req::user(req::UserData { tag: user.clone() }, store).await?;
 
-    let end_time = time_log()
-        .map_err(|_| ErrorInternalServerError("coudln't fetch time"))
-        .unwrap();
+    let end_time = time_log()?;
 
     let response_time = end_time - start_time;
 
@@ -74,27 +67,18 @@ async fn user(user: web::Path<String>, store: Data<proxy::KeyStore>) -> HttpResp
         time: response_time,
     };
 
-    let resp = TEMPLATES.render(
-        "user.html",
-        &Context::from_serialize(data)
-            .map_err(|x| {
-                actix_web::error::ErrorInternalServerError(format!("response error: {}", x))
-            })
-            .unwrap(),
-    );
+    let resp = TEMPLATES.render("user.html", &Context::from_serialize(data)?)?;
 
-    match resp {
-        Ok(body) => HttpResponse::Ok().body(body),
-        Err(body) => HttpResponse::InternalServerError().body(body.to_string()),
-    }
+    Ok(HttpResponse::Ok().body(resp))
 }
 
-/// Post endpoint
+/// Post frontend
 #[get("/t/{post}")]
-async fn post(post: web::Path<String>, store: Data<proxy::KeyStore>) -> HttpResponse {
-    let start_time = time_log()
-        .map_err(|_| ErrorInternalServerError("coudln't fetch time"))
-        .unwrap();
+async fn post(
+    post: web::Path<String>,
+    store: Data<proxy::KeyStore>,
+) -> Result<HttpResponse, ShoelaceError> {
+    let start_time = time_log()?;
 
     let req = req::post(
         req::PostData {
@@ -102,41 +86,26 @@ async fn post(post: web::Path<String>, store: Data<proxy::KeyStore>) -> HttpResp
         },
         store,
     )
-    .await
-    .map_err(|_| ErrorInternalServerError("request failed"))
-    .unwrap();
+    .await?;
 
-    let end_time = time_log()
-        .map_err(|_| ErrorInternalServerError("coudln't fetch time"))
-        .unwrap();
+    let end_time = time_log()?;
 
     let total_time = end_time - start_time;
 
-    let resp = crate::TEMPLATES
-        .render(
-            "post.html",
-            &Context::from_serialize(PostResponse {
-                response: req,
-                time: total_time,
-            })
-            .map_err(|x| {
-                actix_web::error::ErrorInternalServerError(format!("response error: {}", x))
-            })
-            .unwrap(),
-        )
-        .map_err(|x| {
-            actix_web::error::ErrorInternalServerError(format!("could not render template: {}", x))
-        });
+    let resp = crate::TEMPLATES.render(
+        "post.html",
+        &Context::from_serialize(PostResponse {
+            response: req,
+            time: total_time,
+        })?,
+    )?;
 
-    match resp {
-        Ok(body) => HttpResponse::Ok().body(body),
-        Err(body) => HttpResponse::InternalServerError().body(body.to_string()),
-    }
+    Ok(HttpResponse::Ok().body(resp))
 }
 
-/// HGmepage redirect endpoint
-#[get("/redirect")]
-async fn form_redirect(request: web::Query<FormRedirect>) -> impl Responder {
+/// User finder endpoint
+#[get("/find")]
+async fn find(request: web::Query<Find>) -> impl Responder {
     let values = request.into_inner();
 
     Redirect::to(format!("/@{}", values.value)).temporary()
@@ -144,7 +113,7 @@ async fn form_redirect(request: web::Query<FormRedirect>) -> impl Responder {
 
 /// Post redirect endpoint
 #[get("/{_}/post/{path}")]
-async fn post_redirect(request: web::Path<((), String)>) -> impl Responder {
+async fn redirect(request: web::Path<((), String)>) -> impl Responder {
     let values = request.into_inner();
 
     Redirect::to(format!("/t/{}", values.1)).permanent()

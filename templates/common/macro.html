@@ -1,47 +1,58 @@
 {% macro suffix(num) %}
-{% if (num / 1000000000) > 1 %}
+{%- if (num / 1000000000) > 1 -%}
 {{ num / 1000000000 | round(method="floor", precision=1) }}B
-{% elif (num / 100000000) > 1 %}
+{%- elif (num / 100000000) > 1 -%}
 {{ num / 1000000 | round }}M
-{% elif (num / 1000000) > 1 %}
+{%- elif (num / 1000000) > 1 -%}
 {{ num / 1000000 | round(method="floor", precision=1) }}M
-{% elif (num / 100000) > 1 %}
+{%- elif (num / 100000) > 1 -%}
 {{ num / 1000 | round }}k
-{% elif (num / 1000) > 1 %}
+{%- elif (num / 1000) > 1 -%}
 {{ num / 1000 | round(method="floor", precision=1) }}k
-{% else %}
+{%- else -%}
 {{ num }}
-{% endif %}
+{%- endif -%}
 {% endmacro suffix %}
 
 {% macro time_suffix(num) %}
-{% if (num / 1000000) > 1 %}
+{%- if (num / 1000000) > 1 -%}
 {{ num / 1000000 | round(method="floor", precision=1) }}m
-{% elif (num / 100000) > 1 %}
+{%- elif (num / 100000) > 1 -%}
 {{ num / 1000 | round }}s
-{% elif (num / 1000) > 1 %}
+{%- elif (num / 1000) > 1 -%}
 {{ num / 1000 | round(method="floor", precision=2) }}s
-{% else %}
+{%- else -%}
 {{ num }}ms
-{% endif %}
+{%- endif -%}
 {% endmacro suffix %}
 
 {% macro url(body) %}
-{% set ats = body | linebreaksbr | replace(from="<br>", to="<br> ") | split(pat=' ') %}
-{% set new_body = "" %}
-{% for string in ats %}
-	{% if string is containing("@") %}
-		{% set at_tagged = '<a href="/' ~ string ~ '">' ~ string ~ '</a>' %}
-		{% set_global new_body = new_body ~ at_tagged ~ " " %}
-	{% elif string is containing("://") %}
-		{% set url_string = string | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_start_matches(pat="www.") %}
-		{% set url_tagged = '<a href="' ~ string ~ '">' ~ url_string ~ '</a>' %}
-		{% set_global new_body = new_body ~ url_tagged ~ " " %}
-	{% else %}
-		{% set_global new_body = new_body ~ string ~ " " %}
-	{% endif %}
-{% endfor %}
-{{new_body | safe }}
+{%- set ats = body | linebreaksbr | replace(from="<br>", to="<br> ") | split(pat=' ') -%}
+{%- set new_body = "" -%}
+
+{%- for string in ats -%}
+
+{%- if string is containing("@") -%}
+
+{%- set at_tagged = '<a href="/' ~ string ~ '">' ~ string ~ '</a>' -%}
+{%- set_global new_body = new_body ~ at_tagged ~ " " -%}
+
+{%- elif string is containing("://") -%}
+
+{%- set url_string = string | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") |
+trim_start_matches(pat="www.") -%}
+{%- set url_tagged = '<a href="' ~ string ~ '">' ~ url_string ~ '</a>' -%}
+{%- set_global new_body = new_body ~ url_tagged ~ " " -%}
+
+{%- else -%}
+
+{%- set_global new_body = new_body ~ string ~ " " -%}
+
+{%- endif -%}
+
+{%- endfor -%}
+
+{{new_body | trim | safe }}
 {% endmacro url %}
 
 
@@ -50,18 +61,18 @@
 	<div class="post-header">
 		<img class="post-pfp" src="/proxy/{{post.author.pfp}}">
 		<a class="post-username" href="/@{{post.author.username}}">@{{post.author.username}}</a>
-		{% if post.author.verified %}
+		{%- if post.author.verified -%}
 		<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
-		{% endif %}
+		{%- endif -%}
 		<p class="base-inline-separator">•</p>
-		<p class="post-faint">{% if clickable and post.code %}<a class="post-clickable-time"
-				href="/t/{{post.code}}">{% endif %}{{
+		<p class="post-faint">{%- if clickable and post.code -%}<a class="post-clickable-time"
+				href="/t/{{post.code}}">{%- endif -%}{{
 				post.date | date }}{% if clickable and post.code %}</a>{% endif %}</p>
 	</div>
 	<p class="post-body">{{ self::url(body=post.body) }}</p>
 	{% if post.media | length > 0 %}
 	{{ self::media(media=post.media, subpost=clickable) }}
-	{% endif %}
+	{%- endif -%}
 	<div class="post-footer">
 		<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">
 		<p class="post-like-count post-faint">{{ self::suffix(num=post.likes) }}</p>
@@ -77,34 +88,29 @@
 
 {% macro media(media, subpost) %}
 <div class="post-media">
-	{% for object in media %}
+	{%- for object in media -%}
 
-	{% if loop.index is odd and media | length % 2 == 0 or loop.index is odd and not loop.last and loop.index !=
-	media | length - 1%}
+	{%- if loop.index is odd and media | length % 2 == 0 or loop.index is odd and not loop.last and loop.index !=
+	media | length - 1 -%}
 	<div class="post-media-row">
-		{% endif %}
+		{%- endif -%}
 
-		{% if object.kind == "Image" %}
+		{%- if object.kind == "Image" -%}
 
 		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
 			src="/proxy/{{object.content}}">
 
-		{% elif object.kind == "Video" and not subpost %}
-
+		{%- elif object.kind == "Video" and not subpost -%}
 		<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
 			poster="/proxy/{{object.thumbnail}}" src="/proxy/{{object.content}}">
 		</video>
-
-		{% else %}
-
+		{%- else -%}
 		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
 			src="/proxy/{{object.thumbnail}}" alt="{{object.alt}}">
-
-		{% endif %}
-
-		{% if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last %}
+		{%- endif -%}
+		{%- if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last -%}
 	</div>
-	{% endif %}
-	{% endfor %}
+	{%- endif -%}
+	{%- endfor -%}
 </div>
 {% endmacro media %}

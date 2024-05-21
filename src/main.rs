@@ -2,6 +2,7 @@
 extern crate lazy_static;
 
 mod api;
+mod error;
 mod front;
 mod proxy;
 mod req;
@@ -17,6 +18,7 @@ use tera::Tera;
 use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
 
+// Import templates
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
         let tera = match Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
@@ -30,12 +32,18 @@ lazy_static! {
     };
 }
 
+/// Web server
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Initialize logger
     tracing_subscriber::fmt::init();
+
+    // initialize keystore
     let db = web::Data::new(KeyStore {
         content: Mutex::new(HashMap::new()),
     });
+
+    // Start up web server
     HttpServer::new(move || {
         App::new()
             .wrap(Compat::new(TracingLogger::default()))
@@ -46,11 +54,12 @@ async fn main() -> std::io::Result<()> {
             ))
             .service(front::user)
             .service(front::post)
-	    .service(front::home)
-	    .service(front::form_redirect)
-	    .service(front::post_redirect)
+            .service(front::home)
+            .service(front::find)
+            .service(front::redirect)
             .service(web::scope("/api/v1").service(api::post).service(api::user))
             .service(web::scope("/proxy").service(proxy::proxy))
+	    .default_service(web::to(|| error::not_found()))
             .app_data(db.clone())
     })
     .bind(("127.0.0.1", 8080))?

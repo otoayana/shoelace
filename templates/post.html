@@ -4,21 +4,18 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/post.css">
-{% if response.parents or response.replies %}
+{%- if response.parents or response.replies -%}
 <link rel="stylesheet" href="/static/css/subpost.css">
-{% endif %}
+{%- endif -%}
 {% endblock head %}
-
 {% block body %}
-{% for post in response.parents %}
+{%- for post in response.parents -%}
 {{ macro::subpost(post=post) }}
 <hr>
-{% endfor %}
-
+{%- endfor -%}
 {{ macro::post(post=response, clickable=false) }}
-
-{% for post in response.replies %}
+{%- for post in response.replies -%}
 <hr>
 {{ macro::subpost(post=post) }}
-{% endfor %}
+{%- endfor -%}
 {% endblock body %}

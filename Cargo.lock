@@ -1801,6 +1801,7 @@ dependencies = [
  "serde_json",
  "spools",
  "tera",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-actix-web",

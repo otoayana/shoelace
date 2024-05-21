@@ -21,7 +21,7 @@
 
 /* Infobox container */
 .user-info {
-	margin: 2vh 1vw;
+	margin: 2vh 16pt;
 	line-height: 1.25em;
 	width: 100%;
 	display: flex;
@@ -41,7 +41,7 @@
 
 /* Dispĺay name */
 .user-name {
-	margin: 0 0 0 0;
+	margin: 0;
 }
 
 /* Verification badge */

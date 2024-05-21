@@ -1,0 +1,14 @@
+{% extends "common/base.html" %}
+
+{% block title %}Error{% endblock title %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/error.css">
+{% endblock head %}
+
+{% block body %}
+<div class="error">
+<h1 class="error-code">{{ status_code }}</h1>
+<p class="error-description">{{ error }}</p>
+</div>
+{% endblock body %}
