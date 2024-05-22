@@ -15,7 +15,7 @@ use actix_web::{
 use actix_web_static_files::ResourceFiles;
 use config::{ProxyModes, Settings};
 use include_dir::{include_dir, Dir};
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::BufReader};
 use tera::Tera;
 use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
@@ -41,7 +41,6 @@ lazy_static! {
         let templates: Vec<(&str, &str)> = TEMPLATES_DIR
             .find("**/*.html")
             .expect("Templates not found")
-            .into_iter()
             .map(|file| {
                 (
                     file.path().to_str().unwrap_or(""),
@@ -83,15 +82,15 @@ async fn main() -> std::io::Result<()> {
 
     // Defines application data
     let data = web::Data::new(ShoelaceData {
-        keystore_type: config.proxy.mode.to_owned(),
-        rocksdb: match &config.proxy.mode {
+        keystore_type: config.proxy.backend.to_owned(),
+        rocksdb: match &config.proxy.backend {
             ProxyModes::RocksDB => Some(
                 rocksdb::DB::open_default(config.proxy.rocksdb.unwrap().path)
                     .expect("couldn't open database"),
             ),
             _ => None,
         },
-        redis: match &config.proxy.mode {
+        redis: match &config.proxy.backend {
             ProxyModes::Redis => Some({
                 let client = redis::Client::open(config.proxy.redis.unwrap().uri).unwrap();
 
@@ -102,7 +101,7 @@ async fn main() -> std::io::Result<()> {
             }),
             _ => None,
         },
-        internal_store: match &config.proxy.mode {
+        internal_store: match &config.proxy.backend {
             ProxyModes::Internal => Some(Mutex::new(HashMap::new())),
             _ => None,
         },
@@ -110,7 +109,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     // Start up web server
-    HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         let mut app = App::new()
             .wrap(Compat::new(TracingLogger::default()))
             .wrap(Logger::default());
@@ -131,14 +130,43 @@ async fn main() -> std::io::Result<()> {
             app = app.service(web::scope("/api/v1").service(api::post).service(api::user))
         }
 
+        if !matches!(config.proxy.backend, ProxyModes::None) {
+            app = app.service(web::scope("/proxy").service(proxy::proxy));
+        }
+
         app = app
-            .service(web::scope("/proxy").service(proxy::proxy))
             .default_service(web::to(move || error::not_found(config.endpoint.frontend)))
             .app_data(data.clone());
 
         app
-    })
-    .bind((config.server.listen, config.server.port))?
-    .run()
-    .await
+    });
+
+    if config.server.tls.enabled {
+        let mut certs_file = BufReader::new(
+            File::open(config.server.tls.cert).expect("Unable to open certficate file"),
+        );
+        let mut key_file = BufReader::new(
+            File::open(config.server.tls.key).expect("Unable to open certficate file"),
+        );
+
+        let tls_certs = rustls_pemfile::certs(&mut certs_file)
+            .collect::<Result<Vec<_>, _>>()
+            .expect("Not a certificate chain");
+
+        let tls_key = rustls_pemfile::pkcs8_private_keys(&mut key_file)
+            .next()
+            .expect("Not a key file")
+            .expect("Not a key file");
+
+        let tls_config = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(tls_certs, rustls::pki_types::PrivateKeyDer::Pkcs8(tls_key))
+            .expect("Unable to configure TLS");
+
+        server = server.bind_rustls_0_22((config.server.listen, config.server.port), tls_config)?;
+    } else {
+        server = server.bind((config.server.listen, config.server.port))?;
+    }
+
+    server.run().await
 }
