@@ -71,7 +71,7 @@ pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Sho
     // Oroxy post's media
     join_all(resp.media.iter_mut().map(|object| async {
         media_store(object, store.to_owned()).await?;
-	Ok::<(), ProxyError>(())
+        Ok::<(), ProxyError>(())
     }))
     .await;
 

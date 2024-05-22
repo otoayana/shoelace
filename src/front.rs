@@ -2,7 +2,7 @@ use crate::{error::ShoelaceError, req, ShoelaceData, TEMPLATES};
 use actix_web::{
     get,
     web::{self, Data, Redirect},
-    HttpResponse, Responder
+    HttpResponse, Responder,
 };
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};

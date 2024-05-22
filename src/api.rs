@@ -9,10 +9,7 @@ use spools::SpoolsError;
 
 /// User API endpoint
 #[get("/user")]
-async fn user(
-    form: web::Form<req::UserData>,
-    store: Data<ShoelaceData>,
-) -> Result<impl Responder> {
+async fn user(form: web::Form<req::UserData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     // Fetch user
     let resp = req::user(form.into_inner(), store).await;
 
@@ -35,10 +32,7 @@ async fn user(
 
 /// Post API endpoint
 #[get("/post")]
-async fn post(
-    form: web::Form<req::PostData>,
-    store: Data<ShoelaceData>,
-) -> Result<impl Responder> {
+async fn post(form: web::Form<req::PostData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     let resp = req::post(form.into_inner(), store).await;
 
     // We need to unwrap this error as such, since we don't want to return a fully rendered HTML page on an API.

@@ -14,6 +14,7 @@ use actix_web::{
     web, App, HttpServer,
 };
 use config::{ProxyModes, Settings};
+use include_dir::{include_dir, Dir};
 use std::collections::HashMap;
 use tera::Tera;
 use tokio::sync::Mutex;
@@ -28,14 +29,35 @@ pub(crate) struct ShoelaceData {
     pub(crate) base_url: String,
 }
 
+// Bundle in folders on compile time
+pub static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
+pub static STATIC_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/static");
+
 // Import templates
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
-        match Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/**/*")) {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1);
+        let mut tera = Tera::default();
+
+        let templates: Vec<(&str, &str)> = TEMPLATES_DIR
+            .find("**/*.html")
+            .expect("Templates not found")
+            .into_iter()
+            .map(|file| {
+                (
+                    file.path().to_str().unwrap_or(""),
+                    file.as_file()
+                        .expect("Not a file")
+                        .contents_utf8()
+                        .unwrap_or(""),
+                )
+            })
+            .collect::<Vec<(&str, &str)>>();
+
+        match tera.add_raw_templates(templates) {
+            Ok(_) => tera,
+            Err(error) => {
+                println!("Parsing error(s): {}", error);
+                ::std::process::exit(1)
             }
         }
     };
@@ -47,6 +69,7 @@ async fn main() -> std::io::Result<()> {
     // Initialize logger
     tracing_subscriber::fmt::init();
 
+    // Parses config
     let maybe_config = config::Settings::new();
     let config: Settings;
 
@@ -58,6 +81,7 @@ async fn main() -> std::io::Result<()> {
             .unwrap_err());
     }
 
+    // Defines application data
     let data = web::Data::new(ShoelaceData {
         keystore_type: config.proxy.mode.to_owned(),
         rocksdb: match &config.proxy.mode {
