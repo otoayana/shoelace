@@ -1,5 +1,5 @@
 [server]
-# Dddress to listen on
+# Address to listen on
 listen="127.0.0.1"
 # Port to bind
 port=8080
@@ -8,7 +8,7 @@ base_url="https://example.com"
 
 [tls]
 # Enable TLS support
-enabled=true
+enabled=false
 # Certificate chain, in PEM format
 cert=""
 # Key file, in PEM format
