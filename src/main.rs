@@ -8,11 +8,11 @@ mod front;
 mod proxy;
 mod req;
 
-use actix_files::Files;
 use actix_web::{
     middleware::{Compat, Logger},
     web, App, HttpServer,
 };
+use actix_web_static_files::ResourceFiles;
 use config::{ProxyModes, Settings};
 use include_dir::{include_dir, Dir};
 use std::collections::HashMap;
@@ -31,7 +31,7 @@ pub(crate) struct ShoelaceData {
 
 // Bundle in folders on compile time
 pub static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
-pub static STATIC_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/static");
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 // Import templates
 lazy_static! {
@@ -116,11 +116,10 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default());
 
         if config.endpoint.frontend {
+            let generated = generate();
+
             app = app
-                .service(Files::new(
-                    "/static",
-                    concat!(env!("CARGO_MANIFEST_DIR"), "/static"),
-                ))
+                .service(ResourceFiles::new("/static", generated))
                 .service(front::user)
                 .service(front::post)
                 .service(front::home)
