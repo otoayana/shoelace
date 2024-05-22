@@ -1,4 +1,4 @@
-use crate::{config::ProxyModes, error::ProxyError, ShoelaceData};
+use crate::{error::ProxyError, KeyStore, ShoelaceData};
 use actix_web::{
     get,
     web::{Data, Path},
@@ -10,44 +10,37 @@ use reqwest::get;
 
 /// Stores media URLs
 pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, ProxyError> {
-    // Find which keystore is being used
     // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());
     let hashstring = URL_SAFE.encode(hash).to_string();
     let hash_url = format!("{}/proxy/{}", data.base_url, hashstring.clone());
-    match &data.keystore_type {
-        ProxyModes::Internal => {
-            if let Some(content) = &mut &data.internal_store {
-                // Stores pair in keystore
-                let mut lock = content.lock().await;
+
+    // Find which keystore is being used
+    match &data.store {
+        Some(backend) => match backend {
+            // Internal keystore
+            KeyStore::Internal(store) => {
+                let mut lock = store.lock().await;
                 lock.insert(hashstring.clone(), url.to_string());
                 Ok(hash_url)
-            } else {
-                Ok(url.to_string())
             }
-        }
-        ProxyModes::RocksDB => {
-            if let Some(rocks) = &data.rocksdb {
-                rocks.put(hashstring, url).unwrap();
+            // RocksDB
+            KeyStore::RocksDB(store) => {
+                store.put(hashstring, url).unwrap();
                 Ok(hash_url)
-            } else {
-                Ok(url.to_string())
             }
-        }
-        ProxyModes::Redis => {
-            if let Some(red) = &mut &data.redis {
-                let mut con = red.to_owned();
+            // Redis
+            KeyStore::Redis(store) => {
+                let mut con = store.to_owned();
 
                 redis::cmd("SET")
                     .arg(&[hashstring, url.to_string()])
                     .query_async(&mut con)
                     .await?;
                 Ok(hash_url)
-            } else {
-                Ok(url.to_string())
             }
-        }
-        ProxyModes::None => Ok(url.to_string()),
+        },
+        None => Ok(url.to_string()),
     }
 }
 
@@ -61,45 +54,33 @@ pub async fn proxy(
 
     let url: String;
 
-    match &data.keystore_type {
-        ProxyModes::Internal => {
-            if let Some(content) = &mut &data.internal_store {
-                let lock = content.lock().await;
+    match &data.store {
+        Some(backend) => match backend {
+            KeyStore::Internal(store) => {
+                let lock = store.lock().await;
                 url = match lock.get(&path.into_inner()) {
                     Some(object) => object.to_owned(),
                     None => return Err(ProxyError::ObjectNotFound),
                 }
-            } else {
-                return Err(ProxyError::NoProxy);
             }
-        }
-        ProxyModes::RocksDB => {
-            if let Some(rocks) = &data.rocksdb {
-                match rocks.get(path.into_inner())? {
-                    Some(value) => {
-                        url = String::from_utf8(value)
-                            .map_err(|_| ProxyError::CannotRetrieve)
-                            .unwrap()
-                    }
-                    None => return Err(ProxyError::ObjectNotFound),
+            KeyStore::RocksDB(store) => match store.get(path.into_inner())? {
+                Some(value) => {
+                    url = String::from_utf8(value)
+                        .map_err(|_| ProxyError::CannotRetrieve)
+                        .unwrap()
                 }
-            } else {
-                return Err(ProxyError::NoProxy);
-            }
-        }
-        ProxyModes::Redis => {
-            if let Some(red) = &mut &data.redis {
-                let mut con = red.to_owned();
+                None => return Err(ProxyError::ObjectNotFound),
+            },
+            KeyStore::Redis(store) => {
+                let mut con = store.to_owned();
 
                 url = redis::cmd("GET")
                     .arg(path.into_inner())
                     .query_async(&mut con)
                     .await?;
-            } else {
-                return Err(ProxyError::NoProxy);
             }
-        }
-        ProxyModes::None => return Err(ProxyError::NoProxy),
+        },
+        None => return Err(ProxyError::NoProxy),
     }
 
     // Pipes request to CDN
