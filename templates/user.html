@@ -1,43 +1,54 @@
 {% extends "common/base.html" %}
 {% import "common/macro.html" as macro %}
+
+{# Set user's username as the website title #}
 {% block title %}@{{request}}{% endblock title %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/user.css">
-{%- if response.posts | length > 0 -%}
-<link rel="stylesheet" href="/static/css/post.css">
-<link rel="stylesheet" href="/static/css/subpost.css">
-{%- endif -%}
+	<link rel="stylesheet" href="/static/css/user.css">
+	{# Import post and subpost stylesheets if user has any posts #}
+	{%- if response.posts | length > 0 -%}
+		<link rel="stylesheet" href="/static/css/post.css">
+		<link rel="stylesheet" href="/static/css/subpost.css">
+	{%- endif -%}
 {% endblock head %}
 
 {% block body %}
-<div class="user-profile">
-	<img class="user-pfp" src="{{response.pfp}}">
-	<div class="user-info">
-		<div class="user-title">
-			<h1 class="user-name">{{response.name}}</h1>
-			{%- if response.verified -%}
-			<img class="user-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
-			{%- endif -%}
-
-		</div>
-		<p class="user-details">@{{request}}<span class="base-inline-separator"> • </span>{{ macro::suffix(num=response.followers) }} followers</h4>
+	<div class="user-profile">
+		{# Embed user's profile picture #}
+		<img class="user-pfp" src="{{response.pfp}}">
+		<div class="user-info">
+			{# Display title, which includes the user's display name and verification badge, if applicable #}
+			<div class="user-title">
+				<h1 class="user-name">{{response.name}}</h1>
+				{%- if response.verified -%}
+					<img class="user-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
+				{%- endif -%}
+			</div>
+		
+			{# Display user's details, including username and follower count #}
+			<p class="user-details">@{{request}}<span class="base-inline-separator"> • </span>{{ macro::suffix(num=response.followers) }} followers</h4>
+			
+			{# Add user's bio, if filled #}
 			{%- if response.bio | length > 0 -%}
-		<p class="user-bio">{{response.bio}}</p>
-		{%- endif -%}
-		{%- for link in response.links -%}
-		<div class="user-links">
-			<a href="{{ link }}">{{ link | trim_start_matches(pat="http://") |
-				trim_start_matches(pat="https://") |
-				trim_end_matches(pat="/") }}</a>
+				<p class="user-bio">{{response.bio}}</p>
+			{%- endif -%}
+		
+			{# Add user's links #}
+			{%- for link in response.links -%}
+				<div class="user-links">
+					<a href="{{ link }}">{{ link | trim_start_matches(pat="http://") | trim_start_matches(pat="https://") | trim_end_matches(pat="/") }}</a>
+				</div>
+			{%- endfor -%}
 		</div>
-		{%- endfor -%}
 	</div>
-</div>
-{%- if response.posts -%}
-{%- for post in response.posts -%}
-<hr>
-{{ macro::subpost(post=post) }}
-{%- endfor -%}
-{%- endif -%}
+
+	{# Add user's posts, if there's any #}
+	{%- if response.posts -%}
+		{%- for post in response.posts -%}
+			<hr>
+			{{ macro::subpost(post=post) }}
+		{%- endfor -%}
+	{%- endif -%}
+
 {% endblock body %}

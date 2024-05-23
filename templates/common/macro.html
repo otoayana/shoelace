@@ -1,124 +1,156 @@
+{# Follower suffix #}
 {% macro suffix(num) %}
-{%- if (num / 1000000000) > 1 -%}
-{{ num / 1000000000 | round(method="floor", precision=1) }}B
-{%- elif (num / 100000000) > 1 -%}
-{{ num / 1000000 | round }}M
-{%- elif (num / 1000000) > 1 -%}
-{{ num / 1000000 | round(method="floor", precision=1) }}M
-{%- elif (num / 100000) > 1 -%}
-{{ num / 1000 | round }}k
-{%- elif (num / 1000) > 1 -%}
-{{ num / 1000 | round(method="floor", precision=1) }}k
-{%- else -%}
-{{ num }}
-{%- endif -%}
+	{# Billions #}
+	{%- if (num / 1000000000) > 1 -%}
+		{{ num / 1000000000 | round(method="floor", precision=1) }}B
+	{# Hundreds of millions #}
+	{%- elif (num / 100000000) > 1 -%}
+		{{ num / 1000000 | round }}M
+	{# Millions #}
+	{%- elif (num / 1000000) > 1 -%}
+		{{ num / 1000000 | round(method="floor", precision=1) }}M
+	{# Hundreds of thousands #}
+	{%- elif (num / 100000) > 1 -%}
+		{{ num / 1000 | round }}k
+	{# Thousands #}
+	{%- elif (num / 1000) > 1 -%}
+		{{ num / 1000 | round(method="floor", precision=1) }}k
+	{# Units #}
+	{%- else -%}
+		{{ num }}
+	{%- endif -%}
 {% endmacro suffix %}
 
+{# Time suffix (for request times) #}
 {% macro time_suffix(num) %}
-{%- if (num / 1000000) > 1 -%}
-{{ num / 1000000 | round(method="floor", precision=1) }}m
-{%- elif (num / 100000) > 1 -%}
-{{ num / 1000 | round }}s
-{%- elif (num / 1000) > 1 -%}
-{{ num / 1000 | round(method="floor", precision=2) }}s
-{%- else -%}
-{{ num }}ms
-{%- endif -%}
+	{# Minutes #}
+	{%- if (num / 1000000) > 1 -%}
+		{{ num / 1000000 | round(method="floor", precision=2) }}m
+	{# Tens of seconds #}
+	{%- elif (num / 100000) > 1 -%}
+		{{ num / 1000 | round }}s
+	{# Seconds #}
+	{%- elif (num / 1000) > 1 -%}
+		{{ num / 1000 | round(method="floor", precision=2) }}s
+	{# Milliseconds #}
+	{%- else -%}
+		{{ num }}ms
+	{%- endif -%}
 {% endmacro suffix %}
 
+{# Adds hyperlinks on body #}
 {% macro url(body) %}
-{%- set ats = body | linebreaksbr | replace(from="<br>", to="<br> ") | split(pat=' ') -%}
-{%- set new_body = "" -%}
+	{# Unwrap line breaks, split body on every space, and define the return variable #}
+	{%- set ats = body | linebreaksbr | replace(from="<br>", to="<br> ") | split(pat=' ') -%}
+	{%- set new_body = "" -%}
 
-{%- for string in ats -%}
+	{# Build the new body #}
+	{%- for string in ats -%}
+		{# Check for mentions #}
+		{%- if string is containing("@") -%}
+			{# Check whether they end in an exclamation mark #}
+			{%- if string is ending_with("!")%}
+				{%- set at = string | trim_end_matches(pat="!") -%}
+				{%- set rest = "!" -%}
+			{# Check whether they end in a question mark #}
+			{%- elif string is ending_with("?") -%}
+				{%- set at = string | trim_end_matches(pat="?") -%}
+				{%- set rest = "?" -%}
+			{# Leave string as-is if none of the previous characters were found #}
+			{%- else -%}
+				{%- set at = string -%}
+				{%- set rest = "" -%}
+			{%- endif -%}
 
-{%- if string is containing("@") -%}
-{%- if string is ending_with("!")%}
-{%- set at = string | trim_end_matches(pat="!") -%}
-{%- set rest = "!" -%}
-{%- elif string is ending_with("?") -%}
-{%- set at = string | trim_end_matches(pat="?") -%}
-{%- set rest = "?" -%}
-{%- else -%}
-{%- set at = string -%}
-{%- set rest = "" -%}
-{%- endif -%}
-{%- set at_tagged = '<a href="/' ~ at ~ '">' ~ at ~ '</a>' -%}
-{%- set_global new_body = new_body ~ at_tagged ~ rest ~ " " -%}
+			{# Append hyperlinked mention to new body #}
+			{%- set at_tagged = '<a href="/' ~ at ~ '">' ~ at ~ '</a>' -%}
+			{%- set_global new_body = new_body ~ at_tagged ~ rest ~ " " -%}
 
-{%- elif string is containing("://") -%}
+		{# Check for URLs #}
+		{%- elif string is containing("://") -%}
+			{# Strip down URL suffix to display it in a cleaner way #}
+			{%- set url_string = string | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") | trim_start_matches(pat="www.") -%}
+			{# Append hyperlinked URL to new body #}
+			{%- set url_tagged = '<a href="' ~ string ~ '">' ~ url_string ~ '</a>' -%}
+			{%- set_global new_body = new_body ~ url_tagged ~ " " -%}
+		{# Append string as-is to new body if none of the previous cases were satisfied #}
+		{%- else -%}
+			{%- set_global new_body = new_body ~ string ~ " " -%}
+		{%- endif -%}
+	{%- endfor -%}
 
-{%- set url_string = string | trim_start_matches(pat="https://") | trim_start_matches(pat="http://") |
-trim_start_matches(pat="www.") -%}
-{%- set url_tagged = '<a href="' ~ string ~ '">' ~ url_string ~ '</a>' -%}
-{%- set_global new_body = new_body ~ url_tagged ~ " " -%}
-
-{%- else -%}
-
-{%- set_global new_body = new_body ~ string ~ " " -%}
-
-{%- endif -%}
-
-{%- endfor -%}
-
-{{new_body | trim | safe }}
+	{# Return new body #}
+	{{new_body | trim | safe }}
 {% endmacro url %}
 
 
+{# Post structure #}
 {% macro post(post, clickable) %}
-<div class="post">
-	<div class="post-header">
-		<img class="post-pfp" src="{{post.author.pfp}}">
-		<a class="post-username" href="/@{{post.author.username}}">@{{post.author.username}}</a>
-		{%- if post.author.verified -%}
-		<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
+	<div class="post">
+		<div class="post-header">
+			<img class="post-pfp" src="{{post.author.pfp}}">
+			<a class="post-username" href="/@{{post.author.username}}">@{{post.author.username}}</a>
+			{# Add verification badge if user is verified #}
+			{%- if post.author.verified -%}
+				<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
+			{%- endif -%}
+			<p class="base-inline-separator">•</p>
+			<p class="post-faint">
+			{# Make timestamp clickable if it's a subpost #}
+			{%- if clickable and post.code -%}
+				<a class="post-clickable-time" href="/t/{{post.code}}">
+			{%- endif -%}
+			{{ post.date | date }}
+			{% if clickable and post.code %}
+				</a>
+			{% endif %}
+			</p>
+		</div>
+		<p class="post-body">{{ self::url(body=post.body) }}</p>
+		{# Add attachments if the post has any #}
+		{% if post.media | length > 0 %}
+			{{ self::media(media=post.media, subpost=clickable) }}
 		{%- endif -%}
-		<p class="base-inline-separator">•</p>
-		<p class="post-faint">{%- if clickable and post.code -%}<a class="post-clickable-time"
-				href="/t/{{post.code}}">{%- endif -%}{{
-				post.date | date }}{% if clickable and post.code %}</a>{% endif %}</p>
+		<div class="post-footer">
+			<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">
+			<p class="post-like-count post-faint">{{ self::suffix(num=post.likes) }}</p>
+		</div>
 	</div>
-	<p class="post-body">{{ self::url(body=post.body) }}</p>
-	{% if post.media | length > 0 %}
-	{{ self::media(media=post.media, subpost=clickable) }}
-	{%- endif -%}
-	<div class="post-footer">
-		<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">
-		<p class="post-like-count post-faint">{{ self::suffix(num=post.likes) }}</p>
-	</div>
-</div>
 {% endmacro post %}
 
+{# Return subpost, with its customized styling #}
 {% macro subpost(post) %}
-<div class="subpost">
-	{{ self::post(post=post, clickable=true) }}
-</div>
+	<div class="subpost">
+		{{ self::post(post=post, clickable=true) }}
+	</div>
 {% endmacro subpost %}
 
+{# Append media to post #}
 {% macro media(media, subpost) %}
-<div class="post-media">
-	{%- for object in media -%}
+	<div class="post-media">
+		{%- for object in media -%}
+			{# Check whether post has to be added to a row #}
+			{%- if loop.index is odd and media | length % 2 == 0 or loop.index is odd and not loop.last and loop.index != media | length - 1 -%}
+				<div class="post-media-row">
+			{%- endif -%}
 
-	{%- if loop.index is odd and media | length % 2 == 0 or loop.index is odd and not loop.last and loop.index !=
-	media | length - 1 -%}
-	<div class="post-media-row">
-		{%- endif -%}
-
-		{%- if object.kind == "Image" -%}
-
-		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.content}}">
-
-		{%- elif object.kind == "Video" and not subpost -%}
-		<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
-			poster="{{object.thumbnail}}" src="{{object.content}}">
-		</video>
-		{%- else -%}
-		<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.thumbnail}}"
-			alt="{{object.alt}}">
-		{%- endif -%}
-		{%- if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last -%}
+			{# Embed media depending on type #}
+			{%- if object.kind == "Image" -%}
+				<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.content}}">
+			{# Embed thumbnail or full video whether it's a subpost or not #}
+			{%- elif object.kind == "Video" and not subpost -%}
+				<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
+					poster="{{object.thumbnail}}" src="{{object.content}}">
+				</video>
+			{%- else -%}
+				<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.thumbnail}}"
+					alt="{{object.alt}}">
+			{%- endif -%}
+		
+			{# Close row after second object is added #}
+			{%- if loop.index is even and media | length % 2 == 0 or loop.index is even and not loop.last -%}
+				</div>
+			{%- endif -%}
+		{%- endfor -%}
 	</div>
-	{%- endif -%}
-	{%- endfor -%}
-</div>
 {% endmacro media %}

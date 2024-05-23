@@ -20,7 +20,12 @@
 		{% endblock body %}
 	</div>
 
-	<div class="base-footer">{% if time %}{{ macro::time_suffix(num=time) }}<span class="base-inline-separator"> • </span>{% endif %}<a
-			href="https://sr.ht/~nixgoat/shoelace">hub</a><span class="base-inline-separator"> • </span><a
-			href="https://liberapay.com/nixgoat">donate</a></div>
+	<div class="base-footer">
+		{# Add response time, if applicable #}
+		{% if time %}
+			{{ macro::time_suffix(num=time) }}
+			<span class="base-inline-separator"> • </span>
+		{% endif %}
+		<a href="https://sr.ht/~nixgoat/shoelace">hub</a><span class="base-inline-separator"> • </span>
+		<a href="https://liberapay.com/nixgoat">donate</a></div>
 </body>
