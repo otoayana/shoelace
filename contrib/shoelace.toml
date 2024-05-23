@@ -6,12 +6,12 @@ port=8080
 # Instance URL. Needed for accurate proxied media locations in API
 base_url="https://example.com"
 
-[tls]
+[server.tls]
 # Enable TLS support
 enabled=false
-# Certificate chain, in PEM format
+# Path for certificate chain, in PEM format
 cert=""
-# Key file, in PEM format
+# Path for key file, in PEM format
 key=""
 
 [endpoint]
