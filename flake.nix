@@ -18,6 +18,14 @@
         # For `nix build` & `nix run`:
         defaultPackage = naersk'.buildPackage {
           src = ./.;
+
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          buildInputs = with pkgs; [ cacert llvmPackages.libstdcxxClang openssl pkg-config  ];
+          stdenv = pkgs.clangStdenv;
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+          postInstall = ''
+            wrapProgram $out/bin/shoelace --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+          '';
         };
 
         # For `nix develop`:
@@ -30,7 +38,12 @@
             pkg-config
             dbus
             openssl
+            clangStdenv
+            llvmPackages.libstdcxxClang
           ];
+
+          stdenv = pkgs.clangStdenv;
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
         };
       });
 }
