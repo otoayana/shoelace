@@ -1,7 +1,4 @@
-use crate::{
-    error::{ProxyError, ShoelaceError},
-    proxy, ShoelaceData,
-};
+use crate::{proxy, Error, ShoelaceData};
 use actix_web::web::Data;
 use futures::future::join_all;
 use serde::Deserialize;
@@ -9,18 +6,18 @@ use spools::{Media, Post, Threads, User};
 
 /// Required values for User endpoint
 #[derive(Deserialize)]
-pub struct UserData {
-    pub tag: String,
+pub(crate) struct UserData {
+    pub(crate) tag: String,
 }
 
 /// Required values for Post endpoint
 #[derive(Deserialize)]
-pub struct PostData {
-    pub id: String,
+pub(crate) struct PostData {
+    pub(crate) id: String,
 }
 
 /// Common function for storing media structs
-async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(), ProxyError> {
+async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(), proxy::Error> {
     media.content = proxy::store(&media.content, store.to_owned()).await?;
 
     if let Some(thumbnail) = &media.thumbnail {
@@ -31,7 +28,7 @@ async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(),
 }
 
 /// Fetches a user, and proxies its media
-pub async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, ShoelaceError> {
+pub(crate) async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Error> {
     // Fetch user
     let thread = Threads::new()?;
     let mut resp = thread.fetch_user(&data.tag).await?;
@@ -49,7 +46,7 @@ pub async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Sho
         async {
             join_all(sub.media.iter_mut().map(|object| async {
                 media_store(object, store.to_owned()).await?;
-                Ok::<(), ProxyError>(())
+                Ok::<(), proxy::Error>(())
             }))
             .await;
         }
@@ -60,7 +57,7 @@ pub async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Sho
 }
 
 /// Fetches a post, and proxies its media
-pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, ShoelaceError> {
+pub(crate) async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Error> {
     // Fetch post
     let thread = Threads::new()?;
     let mut resp = thread.fetch_post(&post.id).await?;
@@ -71,7 +68,7 @@ pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Sho
     // Oroxy post's media
     join_all(resp.media.iter_mut().map(|object| async {
         media_store(object, store.to_owned()).await?;
-        Ok::<(), ProxyError>(())
+        Ok::<(), proxy::Error>(())
     }))
     .await;
 
@@ -83,11 +80,11 @@ pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Sho
         // Objects
         join_all(sub.media.iter_mut().map(|object| async {
             media_store(object, store.to_owned()).await?;
-            Ok::<(), ProxyError>(())
+            Ok::<(), proxy::Error>(())
         }))
         .await;
 
-        Ok::<(), ProxyError>(())
+        Ok::<(), proxy::Error>(())
     }))
     .await;
 
@@ -99,11 +96,11 @@ pub async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Sho
         // Objects
         join_all(sub.media.iter_mut().map(|object| async {
             media_store(object, store.to_owned()).await?;
-            Ok::<(), ProxyError>(())
+            Ok::<(), proxy::Error>(())
         }))
         .await;
 
-        Ok::<(), ProxyError>(())
+        Ok::<(), proxy::Error>(())
     }))
     .await;
 

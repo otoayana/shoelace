@@ -1,4 +1,4 @@
-use crate::{error::ShoelaceError, req, ShoelaceData, TEMPLATES};
+use crate::{req, Error, ShoelaceData, TEMPLATES};
 use actix_web::{
     get,
     web::{self, Data, Redirect},
@@ -9,7 +9,7 @@ use spools::{Post, User};
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 use tera::Context;
 
-/// For user template
+// For user template
 #[derive(Debug, Deserialize, Serialize)]
 struct UserResponse {
     request: String,
@@ -17,31 +17,30 @@ struct UserResponse {
     time: u128,
 }
 
-/// For post template
+// For post template
 #[derive(Debug, Deserialize, Serialize)]
 struct PostResponse {
     response: Post,
     time: u128,
 }
 
-/// Used by the find form
+// For find form
 #[derive(Debug, Deserialize)]
 struct Find {
     value: String,
 }
 
-/// Logs how much it takes for a request to finish
+// Logs current time, in order to determine request times
 fn time_log() -> Result<u128, SystemTimeError> {
     let start = SystemTime::now();
-
     let since_the_epoch = start.duration_since(UNIX_EPOCH)?.as_millis();
 
     Ok(since_the_epoch)
 }
 
-/// Home
+/// Landing page
 #[get("/")]
-async fn home() -> Result<HttpResponse, ShoelaceError> {
+async fn home() -> Result<HttpResponse, Error> {
     let resp = TEMPLATES.render("home.html", &Context::new())?;
 
     Ok(HttpResponse::Ok().body(resp))
@@ -49,24 +48,25 @@ async fn home() -> Result<HttpResponse, ShoelaceError> {
 
 /// User frontend
 #[get("/@{user}")]
-async fn user(
-    user: web::Path<String>,
-    store: Data<ShoelaceData>,
-) -> Result<HttpResponse, ShoelaceError> {
+async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+    // Get current timestamp before request
     let start_time = time_log()?;
 
+    // Process user request
     let req = req::user(req::UserData { tag: user.clone() }, store).await?;
 
+    // Get request time
     let end_time = time_log()?;
-
     let response_time = end_time - start_time;
 
+    // Define response values
     let data = UserResponse {
         request: user.into_inner(),
         response: req,
         time: response_time,
     };
 
+    // Render template from those values
     let resp = TEMPLATES.render("user.html", &Context::from_serialize(data)?)?;
 
     Ok(HttpResponse::Ok().body(resp))
@@ -74,12 +74,11 @@ async fn user(
 
 /// Post frontend
 #[get("/t/{post}")]
-async fn post(
-    post: web::Path<String>,
-    store: Data<ShoelaceData>,
-) -> Result<HttpResponse, ShoelaceError> {
+async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+    // Get current timestamp before request
     let start_time = time_log()?;
 
+    // Process post request
     let req = req::post(
         req::PostData {
             id: post.into_inner(),
@@ -88,33 +87,38 @@ async fn post(
     )
     .await?;
 
+    // Get request time
     let end_time = time_log()?;
-
     let total_time = end_time - start_time;
 
-    let resp = crate::TEMPLATES.render(
-        "post.html",
-        &Context::from_serialize(PostResponse {
-            response: req,
-            time: total_time,
-        })?,
-    )?;
+    // Define response values
+    let data = PostResponse {
+        response: req,
+        time: total_time,
+    };
+
+    // Render template from those values
+    let resp = crate::TEMPLATES.render("post.html", &Context::from_serialize(data)?)?;
 
     Ok(HttpResponse::Ok().body(resp))
 }
 
-/// User finder endpoint
+// User finder endpoint
 #[get("/find")]
 async fn find(request: web::Query<Find>) -> impl Responder {
+    // Fetches query value
     let values = request.into_inner();
 
+    // Redirects to user
     Redirect::to(format!("/@{}", values.value)).temporary()
 }
 
-/// Post redirect endpoint
+// Post redirect endpoint
 #[get("/{_}/post/{path}")]
 async fn redirect(request: web::Path<((), String)>) -> impl Responder {
+    // Fetches path values
     let values = request.into_inner();
 
+    // Redirects to post
     Redirect::to(format!("/t/{}", values.1)).permanent()
 }

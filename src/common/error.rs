@@ -12,36 +12,17 @@ use thiserror::Error;
 
 /// Defines frontend errors
 #[derive(Error, Debug)]
-pub enum ShoelaceError {
+pub(crate) enum Error {
     #[error("{0}")]
     ThreadsError(#[from] SpoolsError),
     #[error("proxy failed: {0}")]
-    ProxyError(#[from] ProxyError),
+    ProxyError(#[from] crate::proxy::Error),
     #[error("template failed to render: {0}")]
     TemplateError(#[from] tera::Error),
     #[error("couldn't fetch time: {0}")]
     TimeError(#[from] SystemTimeError),
     #[error("not found")]
     NotFound,
-}
-
-/// Defines proxy errors
-#[derive(Error, Debug)]
-pub enum ProxyError {
-    #[error("proxy is unavailable")]
-    NoProxy,
-    #[error("rocksdb error: {0}")]
-    RocksDBError(#[from] rocksdb::Error),
-    #[error("redis error: {0}")]
-    RedisError(#[from] redis::RedisError),
-    #[error("couldn't find object")]
-    ObjectNotFound,
-    #[error("couldn't retrieve object")]
-    CannotRetrieve,
-    #[error("endpoint error: {0}")]
-    EndpointError(#[from] reqwest::Error),
-    #[error("unable to identify mime type")]
-    MimeError,
 }
 
 /// Constructs the contents for an error page
@@ -51,34 +32,14 @@ struct ErrorResponse {
     error: String,
 }
 
-impl error::ResponseError for ProxyError {
+// Fancy error trait
+impl error::ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code()).body(self.to_string())
-    }
-
-    fn status_code(&self) -> StatusCode {
-        match self {
-            Self::ObjectNotFound => StatusCode::NOT_FOUND,
-            Self::EndpointError(val) => {
-                if let Some(status) = val.status() {
-                    match status {
-                        reqwest::StatusCode::NOT_FOUND => StatusCode::NOT_FOUND,
-                        _ => StatusCode::BAD_GATEWAY,
-                    }
-                } else {
-                    StatusCode::BAD_GATEWAY
-                }
-            }
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
-
-impl error::ResponseError for ShoelaceError {
-    /// Fancy error method
-    fn error_response(&self) -> HttpResponse {
+        // Defines return values
         let body: String;
         let status_code: StatusCode;
+
+        // Renders error template
         let template = crate::TEMPLATES
             .render(
                 "common/error.html",
@@ -86,11 +47,12 @@ impl error::ResponseError for ShoelaceError {
                     status_code: self.status_code().as_u16().to_string(),
                     error: self.to_string(),
                 })
-                .map_err(ShoelaceError::TemplateError)
+                .map_err(Error::TemplateError)
                 .unwrap(),
             )
-            .map_err(ShoelaceError::TemplateError);
+            .map_err(Error::TemplateError);
 
+        // Fallback in case the template fails to render.
         if let Ok(template_body) = template {
             body = template_body;
             status_code = self.status_code()
@@ -99,14 +61,16 @@ impl error::ResponseError for ShoelaceError {
             status_code = StatusCode::INTERNAL_SERVER_ERROR;
         }
 
+        // Send response
         HttpResponse::build(status_code)
             .insert_header(ContentType::html())
             .body(body)
     }
 
+    // Map error codes
     fn status_code(&self) -> StatusCode {
         match self {
-            ShoelaceError::ThreadsError(SpoolsError::NotFound(_)) | ShoelaceError::NotFound => {
+            Error::ThreadsError(SpoolsError::NotFound(_)) | Error::NotFound => {
                 StatusCode::NOT_FOUND
             }
             _ => StatusCode::INTERNAL_SERVER_ERROR,
@@ -114,10 +78,11 @@ impl error::ResponseError for ShoelaceError {
     }
 }
 
-/// Handles non-existant routes
-pub async fn not_found(front: bool) -> HttpResponse {
+// Handles non-existant routes
+pub(crate) async fn not_found(front: bool) -> HttpResponse {
+    // Will either serve a fancy or plaintext version, depending on whether the frontend is enabled
     if front {
-        ShoelaceError::NotFound.error_response()
+        Error::NotFound.error_response()
     } else {
         HttpResponse::NotFound().body("not found")
     }

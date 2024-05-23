@@ -1,47 +1,38 @@
 #[macro_use]
 extern crate lazy_static;
 
+// Defines crate modules and re-exports
 mod api;
-mod config;
-mod error;
+mod common;
 mod front;
 mod proxy;
-mod req;
 
+pub(crate) use common::config;
+pub(crate) use common::error::Error;
+pub(crate) use common::req;
+
+// Application begins here
+use crate::common::config::{Settings, Tls};
 use actix_web::{
+    dev::ServiceResponse,
     middleware::{Compat, Logger},
     web, App, HttpServer,
 };
 use actix_web_static_files::ResourceFiles;
-use config::{ProxyModes, Settings};
 use include_dir::{include_dir, Dir};
-use std::{collections::HashMap, fs::File, io::BufReader};
+use proxy::Keystore;
+use std::{
+    fs::File,
+    io::{self, BufReader, ErrorKind},
+};
 use tera::Tera;
-use tokio::sync::Mutex;
 use tracing_actix_web::TracingLogger;
 
 // Define application data
 #[allow(unused)]
 pub(crate) struct ShoelaceData {
-    pub(crate) store: Option<KeyStore>,
+    pub(crate) store: Keystore,
     pub(crate) base_url: String,
-}
-
-// Define keystores
-pub(crate) enum KeyStore {
-    Internal(Mutex<HashMap<String, String>>),
-    RocksDB(rocksdb::DB),
-    Redis(redis::aio::MultiplexedConnection),
-}
-
-// Implement graceful shutdown
-impl Drop for KeyStore {
-    fn drop(&mut self) {
-        // Only RocksDB needs it, in order to close unfinished connections before shutting down
-        if let Self::RocksDB(val) = self {
-            val.cancel_all_background_work(true)
-        }
-    }
 }
 
 // Bundle in folders on compile time
@@ -79,6 +70,18 @@ lazy_static! {
     };
 }
 
+fn logerr(res: &ServiceResponse) -> String {
+    let status = res.status().as_u16();
+
+    if status == 404 {
+        "??".to_string()
+    } else if status >= 400 {
+        "!!".to_string()
+    } else {
+        "<3".to_string()
+    }
+}
+
 /// Web server
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -86,44 +89,14 @@ async fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt::init();
 
     // Parses config
-    let maybe_config = config::Settings::new();
-    let config: Settings;
+    let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
 
-    // Check whether the user has provided a config file
-    if let Ok(got_config) = maybe_config {
-        config = got_config
-    } else {
-        return Err(maybe_config
-            .map_err(|x| std::io::Error::new(std::io::ErrorKind::InvalidInput, x))
-            .unwrap_err());
-    }
-
-    // Defines application data
+    // Assigns application data
     let data = web::Data::new(ShoelaceData {
         // Proxy backends
-        store: match &config.proxy.backend {
-            // RocksDB
-            ProxyModes::RocksDB => Some(KeyStore::RocksDB(
-                // Open keystore in the provided path
-                rocksdb::DB::open_default(config.proxy.rocksdb.unwrap().path)
-                    .expect("couldn't open database"),
-            )),
-            // Redis
-            ProxyModes::Redis => Some(KeyStore::Redis({
-                // Configure client using the URI provided by the user
-                let client = redis::Client::open(config.proxy.redis.unwrap().uri).unwrap();
-
-                // Establish connection
-                client
-                    .get_multiplexed_async_connection()
-                    .await
-                    .expect("couldn't connect to redis")
-            })),
-            // Internal (Creates hash map)
-            ProxyModes::Internal => Some(KeyStore::Internal(Mutex::new(HashMap::new()))),
-            // None (Sets Option as None)
-            ProxyModes::None => None,
-        },
+        store: Keystore::new(config.proxy)
+            .await
+            .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
         // Base URL
         base_url: config.server.base_url,
     });
@@ -133,9 +106,16 @@ async fn main() -> std::io::Result<()> {
         // Defines app base
         let mut app = App::new()
             .wrap(Compat::new(TracingLogger::default()))
-            .wrap(Logger::default())
-            .default_service(web::to(move || error::not_found(config.endpoint.frontend)))
-            .app_data(data.clone());
+            .wrap(
+                Logger::new("%{ERROR_STATUS}xo %s %U %sms")
+                    .custom_response_replace("ERROR_STATUS", |res| logerr(res))
+                    .log_target("shoelace::web"),
+            )
+            .app_data(data.clone())
+            .default_service(web::to(move || {
+                common::error::not_found(config.endpoint.frontend)
+            }))
+            .service(web::scope("/proxy").service(proxy::serve));
 
         // Frontend
         if config.endpoint.frontend {
@@ -157,43 +137,47 @@ async fn main() -> std::io::Result<()> {
             app = app.service(web::scope("/api/v1").service(api::post).service(api::user))
         }
 
-        // Proxy (If enabled)
-        if !matches!(config.proxy.backend, ProxyModes::None) {
-            app = app.service(web::scope("/proxy").service(proxy::proxy));
-        }
-
         // Returns app definition
         app
     });
 
+    // Checks if there's any TLS settings
+    let tls_params = match config.server.tls {
+        Some(opt) => opt,
+        None => Tls {
+            enabled: false,
+            cert: String::new(),
+            key: String::new(),
+        },
+    };
+
     // TLS
-    if config.server.tls.enabled {
+    if tls_params.enabled {
         // Loads certificate chain file
-        let mut certs_file = BufReader::new(
-            File::open(config.server.tls.cert).expect("Unable to open certficate file"),
-        );
+        let mut certs_file = BufReader::new(File::open(tls_params.cert)?);
 
         // Loads key file
-        let mut key_file = BufReader::new(
-            File::open(config.server.tls.key).expect("Unable to open certficate file"),
-        );
+        let mut key_file = BufReader::new(File::open(tls_params.key)?);
 
         // Loads certificates
-        let tls_certs = rustls_pemfile::certs(&mut certs_file)
-            .collect::<Result<Vec<_>, _>>()
-            .expect("Not a certificate chain");
+        let tls_certs = rustls_pemfile::certs(&mut certs_file).collect::<Result<Vec<_>, _>>()?;
 
         // Loads key
-        let tls_key = rustls_pemfile::pkcs8_private_keys(&mut key_file)
-            .next()
-            .expect("Not a key file")
-            .expect("Not a key file");
+        let tls_key = match rustls_pemfile::pkcs8_private_keys(&mut key_file).next() {
+            Some(key) => key?,
+            None => return Err(io::Error::new(ErrorKind::InvalidInput, "Not a key file")),
+        };
 
         // Configures server using provided files
         let tls_config = rustls::ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(tls_certs, rustls::pki_types::PrivateKeyDer::Pkcs8(tls_key))
-            .expect("Unable to configure TLS");
+            .map_err(|err| {
+                io::Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Could not configure TLS server: {}", err),
+                )
+            })?;
 
         // Binds server with TLS
         server = server.bind_rustls_0_22((config.server.listen, config.server.port), tls_config)?;
