@@ -80,7 +80,11 @@
 		font-size: 18pt;
 	}
 
-	/* If not done, the profile pic will look misaligned */
+	/* Align user's profile picture and infobox to the left */ 
+	.user-info {
+			margin: 1vh 0;
+	}
+
 	.user-pfp {
 		margin-left: 0;
 	}

@@ -121,7 +121,7 @@
 /* Adjustments for smaller screens */
 @media (max-width: 1152px) {
 	.post {
-		margin: 16pt 0 16pt 0;
+		margin: 16pt 2pt 16pt 2pt;
 	}
 
 	.post-body {

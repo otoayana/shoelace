@@ -92,13 +92,17 @@
 		text-shadow: 0 0 4px #666;
 	}
 
+	.home-form {
+		box-shadow: 0 0 12px #777;
+	}
+
 	#home-value {
 		background-color: #bbb;
 		color: black;
 	}
 
 	.home-button {
-		background-color: #bbb;
+		background-color: #ccc;
 		color: black;
 	}
 
@@ -115,5 +119,6 @@
 
 	.home {
 		width: 90%;
+		margin: 40pt 0 40pt 0;
 	}
 }
