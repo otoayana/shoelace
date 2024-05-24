@@ -5,12 +5,18 @@ use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::fs::metadata;
 
+//
+// Information regarding every struct's functionality can be found in
+// 'contrib/shoelace.toml', the sample config file for Shoelace.
+//
+
 // Settings structure
 #[derive(Debug, Deserialize)]
 pub(crate) struct Settings {
     pub(crate) server: Server,
     pub(crate) endpoint: Endpoint,
     pub(crate) proxy: Proxy,
+    pub(crate) logging: Logging,
 }
 
 // Server settings
@@ -57,6 +63,18 @@ pub(crate) struct RocksDB {
     pub(crate) path: String,
 }
 
+// Logging settings
+#[derive(Debug, Deserialize)]
+pub(crate) struct Logging {
+    pub(crate) level: String,
+
+    pub(crate) log_ips: bool,
+    pub(crate) log_cdn: bool,
+
+    pub(crate) store: bool,
+    pub(crate) output: String,
+}
+
 // Implement constructor
 impl Settings {
     pub(crate) fn new() -> Result<Self, ConfigError> {
@@ -80,7 +98,12 @@ impl Settings {
             .set_default("server.tls.key", "")?
             .set_default("endpoint.frontend", true)?
             .set_default("endpoint.api", true)?
-            .set_default("proxy.backend", "internal")?;
+            .set_default("proxy.backend", "internal")?
+            .set_default("logging.level", "info")?
+            .set_default("logging.log_ips", false)?
+            .set_default("logging.log_cdn", false)?
+            .set_default("logging.store", false)?
+            .set_default("logging.output", "")?;
 
         if maybe_file.is_ok() {
             builder = builder.add_source(File::with_name(&config_path));

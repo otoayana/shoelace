@@ -25,17 +25,18 @@ use std::{
     fs::File,
     io::{self, BufReader, ErrorKind},
     process::id,
+    sync::Mutex,
 };
 use tera::Tera;
 use tracing::{info, instrument, warn};
 use tracing_actix_web::TracingLogger;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
 
 // Define application data
 #[derive(Debug)]
-#[allow(unused)]
 pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
+    pub(crate) log_cdn: bool,
     pub(crate) base_url: String,
 }
 
@@ -91,6 +92,9 @@ fn log_err(res: &ServiceResponse) -> String {
 #[instrument(name = "shoelace::main")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Parses config
+    let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
+
     // Initializes logger
     let filter = EnvFilter::builder()
         .from_env()
@@ -101,25 +105,30 @@ async fn main() -> std::io::Result<()> {
                 .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
         )
         .add_directive(
-            "shoelace=info"
+            format!("shoelace={}", config.logging.level)
                 .parse()
                 .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
         );
 
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .compact()
-        .init();
+    let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
+    let registry = Registry::default()
+        .with(if config.logging.store {
+            let file = File::create(config.logging.output)?;
+            Some(Layer::default().with_writer(Mutex::new(file)))
+        } else {
+            None
+        })
+        .with(Layer::default().with_writer(non_blocking))
+        .with(filter);
 
-    // Start up message
+    tracing::subscriber::set_global_default(registry).unwrap();
+
+    // Startup message
     info!(
         "👟 Shoelace v{} | PID: {} | https://sr.ht/~nixgoat/shoelace",
         env!("CARGO_PKG_VERSION"),
         id()
     );
-
-    // Parses config
-    let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
 
     // Assigns application data
     let data = web::Data::new(ShoelaceData {
@@ -127,6 +136,7 @@ async fn main() -> std::io::Result<()> {
         store: Keystore::new(config.proxy)
             .await
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
+        log_cdn: config.logging.log_cdn,
         // Base URL
         base_url: config.server.base_url.clone(),
     });
@@ -148,9 +158,19 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new()
             .wrap(Compat::new(TracingLogger::default()))
             .wrap(
-                Logger::new("%{ERROR_STATUS}xo %s %U %Dms")
-                    .custom_response_replace("ERROR_STATUS", |res| log_err(res))
-                    .log_target("shoelace::web"),
+                Logger::new(
+                    format!(
+                        "%{{ERROR_STATUS}}xo %s{}%U %Dms",
+                        if config.logging.log_ips {
+                            " %{r}a"
+                        } else {
+                            " "
+                        }
+                    )
+                    .as_str(),
+                )
+                .custom_response_replace("ERROR_STATUS", |res| log_err(res))
+                .log_target("shoelace::web"),
             )
             .app_data(data.clone())
             .default_service(web::to(move || {

@@ -1,6 +1,6 @@
 [server]
 # Address to listen on
-listen="127.0.0.1"
+listen="0.0.0.0"
 # Port to bind
 port=8080
 # Instance URL. Needed for accurate proxied media locations in API
@@ -10,9 +10,9 @@ base_url="https://example.com"
 # Enable TLS support
 enabled=false
 # Path for certificate chain, in PEM format
-cert=""
+cert="cert.pem"
 # Path for key file, in PEM format
-key=""
+key="key.pem"
 
 [endpoint]
 # Toggle the frontend
@@ -37,3 +37,20 @@ path="./db"
 # - TCP: redis://[<username>][:<password>@]<hostname>[:port][/<db>]
 # - Unix socket: redis+unix:///<path>[?db=<db>[&pass=<password>][&user=<username>]]
 uri="redis://127.0.0.1/"
+
+[logging]
+# Sets log level, for both stdout and logfiles. Valid levels are:
+# - error: Shows errors presented during runtime
+# - warn: Plus Alerts
+# - info: Plus useful information, such as PID, requests, etc. (Recommended)
+# - debug: Plus verbose actions. Not being used much.
+# - trace: Plus low-level, extremely verbose info. Not used much.
+level = "info"
+# Whether to log the IP of an incoming connection
+log_ips = false
+# Whether to log what URLs are being assigned to each hash
+log_cdn = false
+# Store logs in a text file
+store = false
+# Where to store the logs in that case
+output = "shoelace.log"

@@ -51,7 +51,15 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error>
     };
 
     if !matches!(&data.store, Keystore::None) {
-        info!("Spawned hash {}", &hashstring)
+        info!(
+            "Spawned hash {}{}",
+            &hashstring,
+            if data.log_cdn {
+                format!(" -> {}", url)
+            } else {
+                String::from("")
+            }
+        );
     }
 
     result
