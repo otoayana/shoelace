@@ -9,5 +9,5 @@ Send patches to [the mailing list](https://lists.sr.ht/~nixgoat/public-inbox). P
 See [the guide to `git send-email`](https://git-send-email.io) if this is your first time using sourcehut.
 
 ## License
-spools is licensed under the GNU General Public License, version 3 or later. Refer to
+Shoelace is licensed under the GNU General Public License, version 3 or later. Refer to
 [the License](LICENSE) for details.
