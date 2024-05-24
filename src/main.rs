@@ -11,7 +11,7 @@ pub(crate) use common::config;
 pub(crate) use common::error::Error;
 pub(crate) use common::req;
 
-// Application begins here
+// Main application begins here
 use crate::common::config::{Settings, Tls};
 use actix_web::{
     dev::ServiceResponse,
@@ -24,11 +24,15 @@ use proxy::Keystore;
 use std::{
     fs::File,
     io::{self, BufReader, ErrorKind},
+    process::id,
 };
 use tera::Tera;
+use tracing::{info, instrument, warn};
 use tracing_actix_web::TracingLogger;
+use tracing_subscriber::EnvFilter;
 
 // Define application data
+#[derive(Debug)]
 #[allow(unused)]
 pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
@@ -36,12 +40,12 @@ pub(crate) struct ShoelaceData {
 }
 
 // Bundle in folders on compile time
-pub static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
+pub(crate) static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 // Import templates
 lazy_static! {
-    pub static ref TEMPLATES: Tera = {
+    pub(crate) static ref TEMPLATES: Tera = {
         let mut tera = Tera::default();
 
         // Fetches templates from included template directory
@@ -70,7 +74,8 @@ lazy_static! {
     };
 }
 
-fn logerr(res: &ServiceResponse) -> String {
+// Sets characters depending on web server response code
+fn log_err(res: &ServiceResponse) -> String {
     let status = res.status().as_u16();
 
     if status == 404 {
@@ -82,11 +87,36 @@ fn logerr(res: &ServiceResponse) -> String {
     }
 }
 
-/// Web server
+// Web server
+#[instrument(name = "shoelace::main")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Initializes logger
-    tracing_subscriber::fmt::init();
+    let filter = EnvFilter::builder()
+        .from_env()
+        .map_err(|err| io::Error::new(ErrorKind::Other, err))?
+        .add_directive(
+            "none"
+                .parse()
+                .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
+        )
+        .add_directive(
+            "shoelace=info"
+                .parse()
+                .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
+        );
+
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .compact()
+        .init();
+
+    // Start up message
+    info!(
+        "👟 Shoelace v{} | PID: {} | https://sr.ht/~nixgoat/shoelace",
+        env!("CARGO_PKG_VERSION"),
+        id()
+    );
 
     // Parses config
     let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
@@ -98,8 +128,19 @@ async fn main() -> std::io::Result<()> {
             .await
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
         // Base URL
-        base_url: config.server.base_url,
+        base_url: config.server.base_url.clone(),
     });
+
+    info!("Base URL is set to {}", config.server.base_url);
+
+    // Notify administrator if any endpoints are disabled
+    if !config.endpoint.frontend {
+        warn!("Frontend has been disabled");
+    }
+
+    if !config.endpoint.api {
+        warn!("API has been disabled");
+    }
 
     // Configures web server
     let mut server = HttpServer::new(move || {
@@ -107,8 +148,8 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new()
             .wrap(Compat::new(TracingLogger::default()))
             .wrap(
-                Logger::new("%{ERROR_STATUS}xo %s %U %sms")
-                    .custom_response_replace("ERROR_STATUS", |res| logerr(res))
+                Logger::new("%{ERROR_STATUS}xo %s %U %Dms")
+                    .custom_response_replace("ERROR_STATUS", |res| log_err(res))
                     .log_target("shoelace::web"),
             )
             .app_data(data.clone())
@@ -129,12 +170,12 @@ async fn main() -> std::io::Result<()> {
                 .service(front::post)
                 .service(front::home)
                 .service(front::find)
-                .service(front::redirect)
+                .service(front::redirect);
         }
 
         // API
         if config.endpoint.api {
-            app = app.service(web::scope("/api/v1").service(api::post).service(api::user))
+            app = app.service(web::scope("/api/v1").service(api::post).service(api::user));
         }
 
         // Returns app definition
@@ -180,12 +221,26 @@ async fn main() -> std::io::Result<()> {
             })?;
 
         // Binds server with TLS
-        server = server.bind_rustls_0_22((config.server.listen, config.server.port), tls_config)?;
+        server = server.bind_rustls_0_22(
+            (config.server.listen.clone(), config.server.port.clone()),
+            tls_config,
+        )?;
+
+        info!("TLS has been enabled");
     } else {
         // Binds server without TLS
-        server = server.bind((config.server.listen, config.server.port))?;
+        server = server.bind((config.server.listen.clone(), config.server.port.clone()))?;
     }
 
+    info!(
+        "Accepting connections at {}:{}",
+        config.server.listen, config.server.port
+    );
+
     // Runs server
-    server.run().await
+    let run = server.run().await;
+
+    // Notify whenever the server stops
+    info!("🚪 Shoelace exited successfully. See you soon!");
+    run
 }

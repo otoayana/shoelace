@@ -3,6 +3,7 @@ use std::env;
 use crate::proxy::Backends;
 use config::{Config, ConfigError, Environment, File};
 use serde::Deserialize;
+use std::fs::metadata;
 
 // Settings structure
 #[derive(Debug, Deserialize)]
@@ -46,38 +47,45 @@ pub struct Proxy {
 
 // Redis settings
 #[derive(Debug, Deserialize)]
-pub struct Redis {
+pub(crate) struct Redis {
     pub(crate) uri: String,
 }
 
 // RocksDB settings
 #[derive(Debug, Deserialize)]
-pub struct RocksDB {
+pub(crate) struct RocksDB {
     pub(crate) path: String,
 }
 
 // Implement constructor
 impl Settings {
-    pub fn new() -> Result<Self, ConfigError> {
+    pub(crate) fn new() -> Result<Self, ConfigError> {
         // Sets potential paths for config file
         let config_path = match env::var("SHOELACE_CONFIG") {
             Ok(path) => path,
             Err(_) => String::from("shoelace.toml"),
         };
 
+        let maybe_file = metadata(&config_path);
+
         // Defines settings builder
-        let builder = Config::builder()
+        let mut builder = Config::builder()
             .add_source(Environment::with_prefix("SHOELACE"))
-            .add_source(File::with_name(&config_path))
             // This will be the default setup, if no config files are provided.
             .set_default("server.listen", "0.0.0.0")?
             .set_default("server.port", "8080")?
+            .set_default("server.base_url", "http://localhost:8080")?
             .set_default("server.tls.enabled", false)?
+            .set_default("server.tls.cert", "")?
+            .set_default("server.tls.key", "")?
             .set_default("endpoint.frontend", true)?
             .set_default("endpoint.api", true)?
-            .set_default("proxy.backend", "internal")?
-            .build()?;
+            .set_default("proxy.backend", "internal")?;
 
-        builder.try_deserialize()
+        if maybe_file.is_ok() {
+            builder = builder.add_source(File::with_name(&config_path));
+        }
+
+        builder.build()?.try_deserialize()
     }
 }

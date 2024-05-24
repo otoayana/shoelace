@@ -20,6 +20,7 @@ pub enum Error {
     KeystoreError(#[from] KeystoreError),
 }
 
+// Defines keystore errors
 #[derive(Error, Debug)]
 pub(crate) enum KeystoreError {
     #[error("{0}")]
@@ -30,6 +31,7 @@ pub(crate) enum KeystoreError {
     InvalidConfig(Backends),
 }
 
+// Defines plaintext error responses for proxy
 impl ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code()).body(self.to_string())

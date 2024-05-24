@@ -24,7 +24,7 @@ struct PostResponse {
     time: u128,
 }
 
-// For find form
+// For user find form
 #[derive(Debug, Deserialize)]
 struct Find {
     value: String,
@@ -38,7 +38,7 @@ fn time_log() -> Result<u128, SystemTimeError> {
     Ok(since_the_epoch)
 }
 
-/// Landing page
+// Landing page
 #[get("/")]
 async fn home() -> Result<HttpResponse, Error> {
     let resp = TEMPLATES.render("home.html", &Context::new())?;
@@ -46,7 +46,7 @@ async fn home() -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().body(resp))
 }
 
-/// User frontend
+// User frontend
 #[get("/@{user}")]
 async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     // Get current timestamp before request
@@ -72,7 +72,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     Ok(HttpResponse::Ok().body(resp))
 }
 
-/// Post frontend
+// Post frontend
 #[get("/t/{post}")]
 async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     // Get current timestamp before request

@@ -7,7 +7,7 @@ use actix_web::{
 };
 use spools::SpoolsError;
 
-/// User API endpoint
+// User API endpoint
 #[get("/user")]
 async fn user(form: web::Form<req::UserData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     // Fetch user
@@ -29,7 +29,7 @@ async fn user(form: web::Form<req::UserData>, store: Data<ShoelaceData>) -> Resu
     }
 }
 
-/// Post API endpoint
+// Post API endpoint
 #[get("/post")]
 async fn post(form: web::Form<req::PostData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     let resp = req::post(form.into_inner(), store).await;

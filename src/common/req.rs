@@ -5,13 +5,13 @@ use serde::Deserialize;
 use spools::{Media, Post, Threads, User};
 
 /// Required values for User endpoint
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub(crate) struct UserData {
     pub(crate) tag: String,
 }
 
 /// Required values for Post endpoint
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub(crate) struct PostData {
     pub(crate) id: String,
 }
@@ -27,6 +27,7 @@ async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(),
     Ok(())
 }
 
+#[tracing::instrument(err(Display), skip(data, store), fields(error))]
 /// Fetches a user, and proxies its media
 pub(crate) async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Error> {
     // Fetch user
@@ -56,6 +57,7 @@ pub(crate) async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<Us
     Ok(resp)
 }
 
+#[tracing::instrument(err(Display), skip(post, store), fields(error))]
 /// Fetches a post, and proxies its media
 pub(crate) async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Error> {
     // Fetch post

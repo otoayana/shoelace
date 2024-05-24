@@ -10,13 +10,12 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-files = "0.6"
 actix-web = { version = "4", features = ["rustls-0_22"] }
 actix-web-static-files = "4.0"
 base64 = "0.22"
 blake2 = "0.10"
-clap = { version = "4.5.4", features = ["derive"] }
 config = "0.14"
+ctrlc = { version = "3.4", features = ["termination"] }
 futures = "0.3.30"
 include_dir = { version = "0.7", features = ["glob"] }
 infer = "0.15"
@@ -35,7 +34,7 @@ thiserror = "1.0"
 tokio = { version = "1.37.0", features = ["full"] }
 tracing = "0.1"
 tracing-actix-web = "0.7"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [build-dependencies]
 static-files = "0.2.1"
