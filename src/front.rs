@@ -15,6 +15,7 @@ struct UserResponse {
     request: String,
     response: User,
     time: u128,
+    rev: String,
 }
 
 // For post template
@@ -22,6 +23,7 @@ struct UserResponse {
 struct PostResponse {
     response: Post,
     time: u128,
+    rev: String,
 }
 
 // For user find form
@@ -40,8 +42,10 @@ fn time_log() -> Result<u128, SystemTimeError> {
 
 // Landing page
 #[get("/")]
-async fn home() -> Result<HttpResponse, Error> {
-    let resp = TEMPLATES.render("home.html", &Context::new())?;
+async fn home(store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+    let mut context = Context::new();
+    context.insert("rev", &store.rev);
+    let resp = TEMPLATES.render("home.html", &context)?;
 
     Ok(HttpResponse::Ok().body(resp))
 }
@@ -53,7 +57,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let start_time = time_log()?;
 
     // Process user request
-    let req = req::user(req::UserData { tag: user.clone() }, store).await?;
+    let req = req::user(req::UserData { tag: user.clone() }, store.to_owned()).await?;
 
     // Get request time
     let end_time = time_log()?;
@@ -64,6 +68,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
         request: user.into_inner(),
         response: req,
         time: response_time,
+        rev: store.rev.clone(),
     };
 
     // Render template from those values
@@ -83,7 +88,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
         req::PostData {
             id: post.into_inner(),
         },
-        store,
+        store.to_owned(),
     )
     .await?;
 
@@ -95,6 +100,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let data = PostResponse {
         response: req,
         time: total_time,
+        rev: store.rev.clone(),
     };
 
     // Render template from those values

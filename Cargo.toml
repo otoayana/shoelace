@@ -17,6 +17,7 @@ blake2 = "0.10"
 config = "0.14"
 ctrlc = { version = "3.4", features = ["termination"] }
 futures = "0.3.30"
+git-version = "0.3"
 include_dir = { version = "0.7", features = ["glob"] }
 infer = "0.15"
 lazy_static = "1.4"

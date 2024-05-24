@@ -19,6 +19,7 @@ use actix_web::{
     web, App, HttpServer,
 };
 use actix_web_static_files::ResourceFiles;
+use git_version::git_version;
 use include_dir::{include_dir, Dir};
 use proxy::Keystore;
 use std::{
@@ -38,6 +39,7 @@ pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
     pub(crate) log_cdn: bool,
     pub(crate) base_url: String,
+    pub(crate) rev: String,
 }
 
 // Bundle in folders on compile time
@@ -139,6 +141,7 @@ async fn main() -> std::io::Result<()> {
         log_cdn: config.logging.log_cdn,
         // Base URL
         base_url: config.server.base_url.clone(),
+        rev: git_version!().to_string(),
     });
 
     info!("Base URL is set to {}", config.server.base_url);
