@@ -31,7 +31,7 @@
 			
 			{# Add user's bio, if filled #}
 			{%- if response.bio | length > 0 -%}
-				<p class="user-bio">{{response.bio}}</p>
+				<p class="user-bio">{{ response.bio | linebreaksbr | safe }}</p>
 			{%- endif -%}
 		
 			{# Add user's links #}
