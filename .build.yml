@@ -1,13 +1,16 @@
-image: nixos/unstable
-environment:
-  NIX_CONFIG: "experimental-features = nix-command flakes"
+image: debian/testing
+packages:
+  - cargo
+  - clang
+  - libssl-dev
+  - pkg-config
+  - rustfmt
 sources:
   - https://git.sr.ht/~nixgoat/shoelace
 tasks:
   - build: |
       cd shoelace
-      nix build
+      cargo build --release
   - test: |
       cd shoelace
-      nix develop
       cargo test --release
