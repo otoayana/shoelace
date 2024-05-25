@@ -128,10 +128,17 @@ async fn main() -> std::io::Result<()> {
 
     tracing::subscriber::set_global_default(registry).unwrap();
 
+    // Fetch revision
+    let rev = git_version!(
+        args = ["--always", "--dirty=-dirty"],
+        fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+    )
+    .to_string();
+
     // Startup message
     info!(
-        "👟 Shoelace v{} | PID: {} | https://sr.ht/~nixgoat/shoelace",
-        env!("CARGO_PKG_VERSION"),
+        "👟 Shoelace {} | PID: {} | https://sr.ht/~nixgoat/shoelace",
+        &rev,
         id()
     );
 
@@ -144,7 +151,7 @@ async fn main() -> std::io::Result<()> {
         log_cdn: config.logging.log_cdn,
         // Base URL
         base_url: config.server.base_url.clone(),
-        rev: git_version!().to_string(),
+        rev,
     });
 
     info!("Base URL is set to {}", config.server.base_url);
