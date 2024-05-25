@@ -20,9 +20,13 @@
           src = ./.;
 
           nativeBuildInputs = [ pkgs.makeWrapper ];
-          buildInputs = with pkgs; [ cacert llvmPackages.libstdcxxClang openssl pkg-config  ];
+          buildInputs = with pkgs; [ cacert llvmPackages.libstdcxxClang openssl pkg-config ];
+
+          # Includes LLVM for bundling RocksDB in
           stdenv = pkgs.clangStdenv;
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+          
+          # Add CA roots, since otherwise Shoelace can't send requests
           postInstall = ''
             wrapProgram $out/bin/shoelace --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           '';

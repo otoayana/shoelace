@@ -1,0 +1,13 @@
+image: nixos/unstable
+environment:
+  NIX_CONFIG: "experimental-features = nix-command flakes"
+sources:
+  - https://git.sr.ht/~nixgoat/shoelace
+tasks:
+  - build: |
+      cd shoelace
+      nix build
+  - test: |
+      cd shoelace
+      nix develop
+      cargo test --release
