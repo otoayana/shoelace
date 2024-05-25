@@ -1,0 +1,15 @@
+---
+version: "2"
+services:
+  shoelace:
+    image: shoelace
+    container_name: shoelace
+    ports:
+      # Set the first parameter to the port Shoelace will be exposed at
+      - "8080:8080"
+    environment:
+      - SHOELACE_CONFIG=/data/shoelace.toml
+    volumes:
+      # Set the first parameter to a folder containing the config file 
+      - ./data:/data
+    restart: always
