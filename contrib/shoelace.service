@@ -1,0 +1,15 @@
+[Unit]
+Description=A private frontend for Threads
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=shoelace
+ExecStart=$HOME/.cargo/bin/shoelace
+Environment="SHOELACE_CONFIG=/etc/shoelace/config.toml"
+
+[Install]
+WantedBy=multi-user.target
