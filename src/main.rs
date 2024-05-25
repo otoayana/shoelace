@@ -11,6 +11,9 @@ pub(crate) use common::config;
 pub(crate) use common::error::Error;
 pub(crate) use common::req;
 
+#[cfg(test)]
+mod test;
+
 // Main application begins here
 use crate::common::config::{Settings, Tls};
 use actix_web::{

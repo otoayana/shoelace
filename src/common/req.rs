@@ -1,17 +1,17 @@
 use crate::{proxy, Error, ShoelaceData};
 use actix_web::web::Data;
 use futures::future::join_all;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use spools::{Media, Post, Threads, User};
 
 /// Required values for User endpoint
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct UserData {
     pub(crate) tag: String,
 }
 
 /// Required values for Post endpoint
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub(crate) struct PostData {
     pub(crate) id: String,
 }
