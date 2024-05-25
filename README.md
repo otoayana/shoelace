@@ -1,5 +1,5 @@
 # Shoelace <img src="https://git.sr.ht/~nixgoat/shoelace/blob/master/static/img/shoelace.svg" alt="Shoelace logo, showing a shoelace bent in a circle" height=36px>
-[![builds.sr.ht status](https://builds.sr.ht/~nixgoat/shoelace.svg)](https://builds.sr.ht/~nixgoat/shoelace?) ![Matrix](https://img.shields.io/matrix/shoelace%3Anixgoat.me?server_fqdn=matrix.mint.lgbt&logo=matrix)
+[![builds.sr.ht status](https://builds.sr.ht/~nixgoat/shoelace.svg)](https://builds.sr.ht/~nixgoat/shoelace?) [![Matrix](https://img.shields.io/matrix/shoelace%3Anixgoat.me?server_fqdn=matrix.mint.lgbt&logo=matrix)](https://matrix.to/#/#shoelace:nixgoat.me)
 
 Shoelace is an alternative frontend for Instagram's [Threads](https://threads.net/). It delivers a lightweight, minimalist, and privacy-friendly alternative to Threads' web UI, and requires no browser-side JavaScript to access.
 
