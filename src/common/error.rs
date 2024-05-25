@@ -5,6 +5,7 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse, ResponseError,
 };
+use git_version::git_version;
 use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
 use tera::Context;
@@ -30,6 +31,7 @@ pub(crate) enum Error {
 struct ErrorResponse {
     status_code: String,
     error: String,
+    rev: String,
 }
 
 // Fancy error trait
@@ -46,6 +48,11 @@ impl error::ResponseError for Error {
                 &Context::from_serialize(ErrorResponse {
                     status_code: self.status_code().as_u16().to_string(),
                     error: self.to_string(),
+                    rev: git_version!(
+                        args = ["--always", "--dirty=-dirty"],
+                        fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+                    )
+                    .to_string(), // Needs to be redefined, since in this scope we can't read application data
                 })
                 .map_err(Error::TemplateError)
                 .unwrap(),
