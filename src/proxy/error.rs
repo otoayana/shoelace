@@ -22,7 +22,7 @@ pub enum Error {
 
 // Defines keystore errors
 #[derive(Error, Debug)]
-pub(crate) enum KeystoreError {
+pub enum KeystoreError {
     #[error("{0}")]
     RocksDBError(#[from] rocksdb::Error),
     #[error("{0}")]
