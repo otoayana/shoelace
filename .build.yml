@@ -1,10 +1,8 @@
-image: debian/testing
+image: archlinux
 packages:
   - cargo
   - clang
-  - libssl-dev
-  - pkg-config
-  - rustfmt
+  - pkgconf
 sources:
   - https://git.sr.ht/~nixgoat/shoelace
 tasks:
