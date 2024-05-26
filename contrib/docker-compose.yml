@@ -2,7 +2,7 @@
 version: "2"
 services:
   shoelace:
-    image: shoelace
+    image: nixgoat/shoelace
     container_name: shoelace
     ports:
       # Set the first parameter to the port Shoelace will be exposed at
