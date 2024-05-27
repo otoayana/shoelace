@@ -22,7 +22,6 @@ infer = "0.15"
 lazy_static = "1.4"
 reqwest = "0.12"
 redis = { version="*", features = ["tokio-comp"] }
-rocksdb = { version = "0.22", features = ["multi-threaded-cf"] }
 rustls = "0.22"
 rustls-pemfile = "2"
 serde = { version = "1.0", features = ["derive"] }

@@ -24,13 +24,8 @@ api=true
 # Proxy backend. Valid options are:
 # - none: Disable the media proxy. Not recommended if frontend is enabled
 # - internal: Stores values in memory. Destroys itself after stopping Shoelace.
-# - rocksdb: Stores values in a RocksDB database. Recommended.
 # - redis: Stores values in a Redis server. Higher performance. Requires additional software
-backend="rocksdb"
-
-[proxy.rocksdb]
-# Sets where the database will be stored at
-path="./db"
+backend="internal"
 
 [proxy.redis]
 # URI for Redis server.

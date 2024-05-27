@@ -31,11 +31,6 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error>
             lock.insert(hashstring.clone(), url.to_string());
             Ok(hash_url)
         }
-        // RocksDB
-        Keystore::RocksDB(store) => {
-            store.put(hashstring.clone(), url).unwrap();
-            Ok(hash_url)
-        }
         // Redis
         Keystore::Redis(store) => {
             let mut con = store.to_owned();
@@ -82,17 +77,6 @@ pub async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpR
                 None => return Err(Error::ObjectNotFound),
             }
         }
-        Keystore::RocksDB(store) => match store
-            .get(path.into_inner())
-            .map_err(|err| KeystoreError::RocksDBError(err))?
-        {
-            Some(value) => {
-                url = String::from_utf8(value)
-                    .map_err(|_| Error::CannotRetrieve)
-                    .unwrap()
-            }
-            None => return Err(Error::ObjectNotFound),
-        },
         Keystore::Redis(store) => {
             let mut con = store.to_owned();
 

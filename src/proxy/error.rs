@@ -10,8 +10,6 @@ pub enum Error {
     NoProxy,
     #[error("Couldn't find object")]
     ObjectNotFound,
-    #[error("Couldn't retrieve object")]
-    CannotRetrieve,
     #[error("Endpoint error: {0}")]
     EndpointError(#[from] reqwest::Error),
     #[error("Unable to identify mime type")]
@@ -23,8 +21,6 @@ pub enum Error {
 // Defines keystore errors
 #[derive(Error, Debug)]
 pub enum KeystoreError {
-    #[error("{0}")]
-    RocksDBError(#[from] rocksdb::Error),
     #[error("{0}")]
     RedisError(#[from] redis::RedisError),
     #[error("invalid config for {0}")]

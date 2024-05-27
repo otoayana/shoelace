@@ -48,19 +48,12 @@ pub struct Endpoint {
 pub struct Proxy {
     pub(crate) backend: Backends,
     pub(crate) redis: Option<Redis>,
-    pub(crate) rocksdb: Option<RocksDB>,
 }
 
 // Redis settings
 #[derive(Debug, Deserialize)]
 pub(crate) struct Redis {
     pub(crate) uri: String,
-}
-
-// RocksDB settings
-#[derive(Debug, Deserialize)]
-pub(crate) struct RocksDB {
-    pub(crate) path: String,
 }
 
 // Logging settings
