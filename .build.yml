@@ -1,8 +1,6 @@
 image: archlinux
 packages:
   - cargo
-  - clang
-  - pkgconf
 sources:
   - https://git.sr.ht/~nixgoat/shoelace
 tasks:
