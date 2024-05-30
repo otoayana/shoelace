@@ -1,9 +1,11 @@
 /* Error container */
 .error {
-	padding: 48pt;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	margin: 64pt 0 64pt 0;
+	gap: 10pt;
+	width: 50%;
 }
 
 /* Error code */
@@ -11,13 +13,14 @@
 	font-size: 48pt;
 	margin: 0;
 	text-shadow: 0 0 10px #111;
+	user-select: none;
 }
 
 /* Error description */
 .error-description {
 	color: #888;
-	line-height: 1em;
-	margin-top: 0.75em;
-	margin-bottom: 0;
+	line-height: 0.25em;
+	margin: 0.25em 0;
 	font-size: 14pt;
+	user-select: none;
 }

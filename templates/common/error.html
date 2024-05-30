@@ -11,5 +11,10 @@
   <div class="error">
     <h1 class="error-code">{{ status_code }}</h1>
     <p class="error-description">{{ error }}</p>
+    {# Search bar #}
+    <form class="search-form" action="/find">
+      <input id="search-value" type="text" name="value" placeholder="Jump to a profile...">
+      <input class="search-button" type="submit" value="Go">
+    </form>
   </div>
 {% endblock body %}
