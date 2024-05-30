@@ -20,9 +20,7 @@ pub(crate) struct PostData {
 async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(), proxy::Error> {
     media.content = proxy::store(&media.content, store.to_owned()).await?;
 
-    if let Some(thumbnail) = &media.thumbnail {
-        media.thumbnail = Some(proxy::store(thumbnail, store.to_owned()).await?);
-    }
+    media.thumbnail = proxy::store(&media.thumbnail, store.to_owned()).await?;
 
     Ok(())
 }

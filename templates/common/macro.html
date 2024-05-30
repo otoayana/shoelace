@@ -134,10 +134,11 @@
 				<div class="post-media-row">
 			{%- endif -%}
 
-			{# Embed media depending on type #}
-			{%- if object.kind == "Image" -%}
+			{# Embed media depending on type and whether it's subposted or not #}
+			{%- if object.kind == "Image" and not subpost -%}
 				<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.content}}">
-			{# Embed thumbnail or full video whether it's a subpost or not #}
+			{%- elif object.kind == "Image" -%}
+				<img class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}" src="{{object.thumbnail}}">
 			{%- elif object.kind == "Video" and not subpost -%}
 				<video controls class="post-media-object" alt="{{object.alt}}" title="{{object.alt}}"
 					poster="{{object.thumbnail}}" src="{{object.content}}">

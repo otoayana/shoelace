@@ -254,7 +254,7 @@ async fn main() -> std::io::Result<()> {
             })?;
 
         // Binds server with TLS
-        server = server.bind_rustls_0_22(
+        server = server.bind_rustls_0_23(
             (config.server.listen.clone(), config.server.port.clone()),
             tls_config,
         )?;
