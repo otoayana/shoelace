@@ -108,7 +108,7 @@
 		</div>
 		<p class="post-body">{{ self::url(body=post.body) }}</p>
 		{# Add attachments if the post has any #}
-		{% if post.media | length > 0 %}
+		{%- if post.media | length > 0 -%}
 			{{ self::media(media=post.media, subpost=clickable) }}
 		{%- endif -%}
 		<div class="post-footer">
