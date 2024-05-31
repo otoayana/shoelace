@@ -1,28 +1,28 @@
 {% extends "common/base.html" %}
 {% import "common/macro.html" as macro %}
 
-{% block title %}Post by @{{response.author.username}}{% endblock title %}
+{% block title %}Post by @{{response.Post.author.username}}{% endblock title %}
 
 {% block head %}
   <link rel="stylesheet" href="/static/css/post.css">
   {# Add subpost stylesheet if there's any post relations #}
-  {%- if response.parents or response.replies -%}
+  {%- if response.Post.parents or response.Post.replies -%}
     <link rel="stylesheet" href="/static/css/subpost.css">
   {%- endif -%}
 {% endblock head %}
 
 {% block body %}
   {# Adds parents #}
-  {%- for post in response.parents -%}
+  {%- for post in response.Post.parents -%}
     {{ macro::subpost(post=post) }}
     <hr>
   {%- endfor -%}
 
   {# Renders post #}
-  {{ macro::post(post=response, clickable=false) }}
+  {{ macro::post(post=response.Post, clickable=false) }}
 
   {# Adds replies #}
-  {%- for post in response.replies -%}
+  {%- for post in response.Post.replies -%}
     <hr>
     {{ macro::subpost(post=post) }}
   {%- endfor -%}

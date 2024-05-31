@@ -9,21 +9,20 @@ use spools::{Post, User};
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 use tera::Context;
 
-// For user template
 #[derive(Debug, Deserialize, Serialize)]
-struct UserResponse {
-    request: String,
-    response: User,
-    time: u128,
-    rev: String,
+enum ResponseTypes {
+    Post(Post),
+    User(User),
 }
 
-// For post template
+// For user template
 #[derive(Debug, Deserialize, Serialize)]
-struct PostResponse {
-    response: Post,
+struct Response {
+    request: String,
+    response: ResponseTypes,
     time: u128,
     rev: String,
+    base_url: String,
 }
 
 // For user find form
@@ -64,11 +63,12 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let response_time = end_time - start_time;
 
     // Define response values
-    let data = UserResponse {
+    let data = Response {
         request: user.into_inner(),
-        response: req,
+        response: ResponseTypes::User(req),
         time: response_time,
         rev: store.rev.clone(),
+        base_url: store.base_url.clone(),
     };
 
     // Render template from those values
@@ -84,23 +84,19 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let start_time = time_log()?;
 
     // Process post request
-    let req = req::post(
-        req::PostData {
-            id: post.into_inner(),
-        },
-        store.to_owned(),
-    )
-    .await?;
+    let req = req::post(req::PostData { id: post.clone() }, store.to_owned()).await?;
 
     // Get request time
     let end_time = time_log()?;
     let total_time = end_time - start_time;
 
     // Define response values
-    let data = PostResponse {
-        response: req,
+    let data = Response {
+        request: post.into_inner(),
+        response: ResponseTypes::Post(req),
         time: total_time,
         rev: store.rev.clone(),
+        base_url: store.base_url.clone(),
     };
 
     // Render template from those values

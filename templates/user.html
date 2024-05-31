@@ -7,7 +7,7 @@
 {% block head %}
 	<link rel="stylesheet" href="/static/css/user.css">
 	{# Import post and subpost stylesheets if user has any posts #}
-	{%- if response.posts | length > 0 -%}
+	{%- if response.User.posts | length > 0 -%}
 		<link rel="stylesheet" href="/static/css/post.css">
 		<link rel="stylesheet" href="/static/css/subpost.css">
 	{%- endif -%}
@@ -16,26 +16,26 @@
 {% block body %}
 	<div class="user-profile">
 		{# Embed user's profile picture #}
-		<img class="user-pfp" src="{{response.pfp}}">
+		<img class="user-pfp" src="{{response.User.pfp}}">
 		<div class="user-info">
 			{# Display title, which includes the user's display name and verification badge, if applicable #}
 			<div class="user-title">
-				<h1 class="user-name">{{response.name}}</h1>
-				{%- if response.verified -%}
+				<h1 class="user-name">{{response.User.name}}</h1>
+				{%- if response.User.verified -%}
 					<img class="user-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
 				{%- endif -%}
 			</div>
 		
 			{# Display user's details, including username and follower count #}
-			<p class="user-details">@{{request}}<span class="base-inline-separator"> • </span>{{ macro::suffix(num=response.followers) }} followers</h4>
+			<p class="user-details">@{{request}}<span class="base-inline-separator"> • </span>{{ macro::suffix(num=response.User.followers) }} followers</h4>
 			
 			{# Add user's bio, if filled #}
-			{%- if response.bio | length > 0 -%}
-				<p class="user-bio">{{ response.bio | linebreaksbr | safe }}</p>
+			{%- if response.User.bio | length > 0 -%}
+				<p class="user-bio">{{ response.User.bio | linebreaksbr | safe }}</p>
 			{%- endif -%}
 		
 			{# Add user's links #}
-			{%- for link in response.links -%}
+			{%- for link in response.User.links -%}
 				<div class="user-links">
 					<a href="{{ link }}">{{ link | trim_start_matches(pat="http://") | trim_start_matches(pat="https://") | trim_end_matches(pat="/") }}</a>
 				</div>
@@ -44,8 +44,8 @@
 	</div>
 
 	{# Add user's posts, if there's any #}
-	{%- if response.posts -%}
-		{%- for post in response.posts -%}
+	{%- if response.User.posts -%}
+		{%- for post in response.User.posts -%}
 			<hr>
 			{{ macro::subpost(post=post) }}
 		{%- endfor -%}
