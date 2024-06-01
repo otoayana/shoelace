@@ -11,6 +11,15 @@
 		<link rel="stylesheet" href="/static/css/post.css">
 		<link rel="stylesheet" href="/static/css/subpost.css">
 	{%- endif -%}
+	{# Open Graph properties #}
+	<meta property="og:type" content="profile">
+	<meta property="og:title" content="{{response.User.name}} (@{{request}})">
+	<meta property="og:description" content="{{response.User.bio}}">
+	<meta property="og:image" content="{{response.User.pfp | safe }}">
+	<meta property="og:image:alt" content="Profile picture for user @{{request}}">
+	<meta property="og:url" content="{{ base_url | safe }}/@{{request}}">
+	<meta property="og:first_name" content="{{response.User.name}}">
+	<meta property="og:username" content="@{{request}}">
 {% endblock head %}
 
 {% block body %}

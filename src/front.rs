@@ -44,6 +44,7 @@ fn time_log() -> Result<u128, SystemTimeError> {
 async fn home(store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     let mut context = Context::new();
     context.insert("rev", &store.rev);
+    context.insert("base_url", &store.base_url);
     let resp = TEMPLATES.render("home.html", &context)?;
 
     Ok(HttpResponse::Ok().body(resp))

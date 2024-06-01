@@ -3,7 +3,13 @@
 {% block title %}Home{% endblock title %}
 
 {% block head %}
-<link rel="stylesheet" href="/static/css/home.css">
+	<link rel="stylesheet" href="/static/css/home.css">
+	<meta property="og:title" content="Shoelace">
+	<meta property="og:type" content="website">
+	<meta property="og:description" content="a private frontend for Threads">
+	<meta property="og:image" content="{{base_url | safe}}/static/img/shoelace.svg">
+	<meta property="og:image:alt" content="Logo for Shoelace, consisting of a drawing depicting a shoelace twisted in a loop, with two aglets pointing upwards on each end.">
+	<meta property="og:url" content="{{base_url | safe}}">
 {% endblock head %}
 
 {% block body %}

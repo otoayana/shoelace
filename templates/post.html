@@ -9,6 +9,21 @@
   {%- if response.Post.parents or response.Post.replies -%}
     <link rel="stylesheet" href="/static/css/subpost.css">
   {%- endif -%}
+  {# Open Graph properties #}
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Post by @{{response.Post.author.username}}">
+  <meta property="og:description" content="{{response.Post.body}}">
+  {# Include media in properties if applicable #}
+  {%- if response.Post.media | length > 0 -%}
+    {%- set object = response.Post.media | first -%}
+    {%- if object.kind == "Image" -%}
+      <meta property="og:image" content="{{object.content | safe }}">
+      <meta property="og:image:alt" content="{{object.alt}}">
+    {%- else -%}
+      <meta property="og:video" content="{{object.content | safe }}">
+    {%- endif -%}
+  {%- endif -%}
+  <meta property="og:url" content="{{base_url | safe}}/t/{{request}}">
 {% endblock head %}
 
 {% block body %}

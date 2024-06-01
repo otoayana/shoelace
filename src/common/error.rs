@@ -29,6 +29,7 @@ pub(crate) enum Error {
 /// Constructs the contents for an error page
 #[derive(Debug, Deserialize, Serialize)]
 struct ErrorResponse {
+    base_url: String,
     status_code: String,
     error: String,
     rev: String,
@@ -46,6 +47,7 @@ impl error::ResponseError for Error {
             .render(
                 "common/error.html",
                 &Context::from_serialize(ErrorResponse {
+                    base_url: String::new(),
                     status_code: self.status_code().as_u16().to_string(),
                     error: self.to_string(),
                     rev: git_version!(
