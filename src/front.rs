@@ -55,7 +55,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let start_time = time_log()?;
 
     // Process user request
-    let req = req::user(req::UserData { tag: user.clone() }, store.to_owned()).await?;
+    let req = req::user(user.clone(), store.to_owned()).await?;
 
     // Get request time
     let end_time = time_log()?;
@@ -83,7 +83,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let start_time = time_log()?;
 
     // Process post request
-    let req = req::post(req::PostData { id: post.clone() }, store.to_owned()).await?;
+    let req = req::post(post.clone(), store.to_owned()).await?;
 
     // Get request time
     let end_time = time_log()?;

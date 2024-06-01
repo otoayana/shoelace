@@ -8,10 +8,10 @@ use actix_web::{
 use spools::SpoolsError;
 
 // User API endpoint
-#[get("/user")]
-async fn user(form: web::Form<req::UserData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
+#[get("/user/{user}")]
+async fn user(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     // Fetch user
-    let resp = req::user(form.into_inner(), store).await;
+    let resp = req::user(path.into_inner(), store).await;
 
     // We need to unwrap this error as such, since we don't want to return a fully rendered HTML page on an API.
     match resp {
@@ -30,9 +30,9 @@ async fn user(form: web::Form<req::UserData>, store: Data<ShoelaceData>) -> Resu
 }
 
 // Post API endpoint
-#[get("/post")]
-async fn post(form: web::Form<req::PostData>, store: Data<ShoelaceData>) -> Result<impl Responder> {
-    let resp = req::post(form.into_inner(), store).await;
+#[get("/post/{id}")]
+async fn post(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl Responder> {
+    let resp = req::post(path.into_inner(), store).await;
 
     // We need to unwrap this error as such, since we don't want to return a fully rendered HTML page on an API.
     match resp {

@@ -208,7 +208,7 @@ async fn main() -> std::io::Result<()> {
 
         // API
         if config.endpoint.api {
-            app = app.service(web::scope("/api/v1").service(api::post).service(api::user));
+            app = app.service(web::scope("/api").service(api::post).service(api::user));
         }
 
         // Returns app definition

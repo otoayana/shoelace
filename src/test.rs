@@ -1,6 +1,5 @@
 use crate::{
     api, front, proxy,
-    req::{PostData, UserData},
     ShoelaceData,
 };
 use actix_web::{test, web, App};
@@ -70,10 +69,7 @@ async fn user_api() {
 
     // Fetches a user
     let req = test::TestRequest::get()
-        .uri("/user")
-        .set_form(UserData {
-            tag: "zuck".to_string(),
-        })
+        .uri("/user/zuck")
         .to_request();
     let resp: User = test::call_and_read_body_json(&app, req).await;
 
@@ -98,10 +94,7 @@ async fn post_api() {
 
     // Fetches a post
     let req = test::TestRequest::get()
-        .uri("/post")
-        .set_form(PostData {
-            id: "C2QBoRaRmR1".to_string(),
-        })
+        .uri("/post/C2QBoRaRmR1")
         .to_request();
     let resp: Post = test::call_and_read_body_json(&app, req).await;
 
@@ -129,10 +122,7 @@ async fn proxy() {
 
     // Requests a user through the API, in order to generate a media hash to check
     let api_req = test::TestRequest::get()
-        .uri("/user")
-        .set_form(UserData {
-            tag: "zuck".to_string(),
-        })
+        .uri("/user/zuck")
         .to_request();
     let api_resp: User = test::call_and_read_body_json(&app, api_req).await;
 

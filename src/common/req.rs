@@ -1,22 +1,9 @@
 use crate::{proxy, Error, ShoelaceData};
 use actix_web::web::Data;
 use futures::future::join_all;
-use serde::{Deserialize, Serialize};
 use spools::{Media, Post, Threads, User};
 
-/// Required values for User endpoint
-#[derive(Deserialize, Debug, Serialize)]
-pub(crate) struct UserData {
-    pub(crate) tag: String,
-}
-
-/// Required values for Post endpoint
-#[derive(Deserialize, Debug, Serialize)]
-pub(crate) struct PostData {
-    pub(crate) id: String,
-}
-
-/// Common function for storing media structs
+// Common function for storing media structs
 async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(), proxy::Error> {
     media.content = proxy::store(&media.content, store.to_owned()).await?;
 
@@ -25,12 +12,12 @@ async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(),
     Ok(())
 }
 
-#[tracing::instrument(err(Display), skip(data, store), fields(error))]
-/// Fetches a user, and proxies its media
-pub(crate) async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<User, Error> {
+#[tracing::instrument(err(Display), skip(user, store), fields(error))]
+// Fetches a user, and proxies its media
+pub(crate) async fn user(user: String, store: Data<ShoelaceData>) -> Result<User, Error> {
     // Fetch user
     let thread = Threads::new()?;
-    let mut resp = thread.fetch_user(&data.tag).await?;
+    let mut resp = thread.fetch_user(&user).await?;
 
     // Proxy user's profile picture
     let pfp = proxy::store(resp.pfp.as_str(), store.to_owned()).await?;
@@ -57,10 +44,10 @@ pub(crate) async fn user(data: UserData, store: Data<ShoelaceData>) -> Result<Us
 
 #[tracing::instrument(err(Display), skip(post, store), fields(error))]
 /// Fetches a post, and proxies its media
-pub(crate) async fn post(post: PostData, store: Data<ShoelaceData>) -> Result<Post, Error> {
+pub(crate) async fn post(post: String, store: Data<ShoelaceData>) -> Result<Post, Error> {
     // Fetch post
     let thread = Threads::new()?;
-    let mut resp = thread.fetch_post(&post.id).await?;
+    let mut resp = thread.fetch_post(&post).await?;
 
     // Proxy author's profile picture
     resp.author.pfp = proxy::store(&resp.author.pfp, store.to_owned()).await?;
