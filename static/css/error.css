@@ -19,7 +19,7 @@
 /* Error description */
 .error-description {
 	color: #888;
-	line-height: 0.25em;
+	text-align: center;
 	margin: 0.25em 0;
 	font-size: 14pt;
 	user-select: none;
