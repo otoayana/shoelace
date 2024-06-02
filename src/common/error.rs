@@ -35,6 +35,22 @@ struct ErrorResponse {
     rev: String,
 }
 
+// Plaintext error method
+impl Error {
+    pub(crate) fn to_plaintext(self) -> actix_web::Error {
+        match self {
+            Error::ThreadsError(spools_err) => {
+                if let SpoolsError::NotFound(_) = spools_err {
+                    error::ErrorNotFound(spools_err)
+                } else {
+                    error::ErrorInternalServerError(spools_err)
+                }
+            }
+            _ => error::ErrorInternalServerError(self),
+        }
+    }
+}
+
 // Fancy error trait
 impl error::ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
