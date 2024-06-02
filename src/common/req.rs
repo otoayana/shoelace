@@ -12,8 +12,8 @@ async fn media_store(media: &mut Media, store: Data<ShoelaceData>) -> Result<(),
     Ok(())
 }
 
-#[tracing::instrument(err(Display), skip(user, store), fields(error))]
 // Fetches a user, and proxies its media
+#[tracing::instrument(err(Display), skip(user, store), fields(error))]
 pub(crate) async fn user(user: String, store: Data<ShoelaceData>) -> Result<User, Error> {
     // Fetch user
     let thread = Threads::new()?;
@@ -42,8 +42,8 @@ pub(crate) async fn user(user: String, store: Data<ShoelaceData>) -> Result<User
     Ok(resp)
 }
 
+// Fetches a post, and proxies its media
 #[tracing::instrument(err(Display), skip(post, store), fields(error))]
-/// Fetches a post, and proxies its media
 pub(crate) async fn post(post: String, store: Data<ShoelaceData>) -> Result<Post, Error> {
     // Fetch post
     let thread = Threads::new()?;

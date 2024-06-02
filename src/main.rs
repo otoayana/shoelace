@@ -10,17 +10,14 @@ mod proxy;
 pub(crate) use common::config;
 pub(crate) use common::error::Error;
 pub(crate) use common::req;
+use tracing_log::LogTracer;
 
 #[cfg(test)]
 mod test;
 
 // Main application begins here
 use crate::common::config::{Settings, Tls};
-use actix_web::{
-    dev::ServiceResponse,
-    middleware::{Compat, Logger},
-    web, App, HttpServer,
-};
+use actix_web::{dev::ServiceResponse, middleware::Logger, web, App, HttpServer};
 use actix_web_static_files::ResourceFiles;
 use git_version::git_version;
 use include_dir::{include_dir, Dir};
@@ -33,7 +30,6 @@ use std::{
 };
 use tera::Tera;
 use tracing::{info, instrument, warn};
-use tracing_actix_web::TracingLogger;
 use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
 
 // Define application data
@@ -100,7 +96,7 @@ async fn main() -> std::io::Result<()> {
     // Parses config
     let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
 
-    // Initializes logger
+    // Create log filter, in order to exclude Actix's verbose logs, due to many of them being too verbose to be useful.
     let filter = EnvFilter::builder()
         .from_env()
         .map_err(|err| io::Error::new(ErrorKind::Other, err))?
@@ -115,6 +111,7 @@ async fn main() -> std::io::Result<()> {
                 .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
         );
 
+    // Initialize logging registry
     let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let registry = Registry::default()
         .with(if config.logging.store {
@@ -126,7 +123,11 @@ async fn main() -> std::io::Result<()> {
         .with(Layer::default().with_writer(non_blocking))
         .with(filter);
 
+    // Create subscriber
     tracing::subscriber::set_global_default(registry).unwrap();
+
+    // Adapt logs from `log` crate into tracing logs
+    LogTracer::init().map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
     // Fetch revision
     let rev = git_version!(
@@ -148,12 +149,15 @@ async fn main() -> std::io::Result<()> {
         store: Keystore::new(config.proxy)
             .await
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
+        // CDN logging setting
         log_cdn: config.logging.log_cdn,
         // Base URL
         base_url: config.server.base_url.clone(),
+        // Git/Cargo revision
         rev,
     });
 
+    // Notify the admin about what base URL was stuff
     info!("Base URL is set to {}", config.server.base_url);
 
     // Notify administrator if any endpoints are disabled
@@ -169,7 +173,7 @@ async fn main() -> std::io::Result<()> {
     let mut server = HttpServer::new(move || {
         // Defines app base
         let mut app = App::new()
-            .wrap(Compat::new(TracingLogger::default()))
+            // Start web request logger
             .wrap(
                 Logger::new(
                     format!(
@@ -186,6 +190,8 @@ async fn main() -> std::io::Result<()> {
                 .log_target("shoelace::web"),
             )
             .app_data(data.clone())
+            /* Set 404 page to be the default page shown if no routes are provided. 
+            If the frontend is displayed, these will be replaced by a plaintext version.*/
             .default_service(web::to(move || {
                 common::error::not_found(config.endpoint.frontend)
             }))
@@ -265,6 +271,7 @@ async fn main() -> std::io::Result<()> {
         server = server.bind((config.server.listen.clone(), config.server.port.clone()))?;
     }
 
+    // Now that everything is configured, notify the admin the server is up!
     info!(
         "Accepting connections at {}:{}",
         config.server.listen, config.server.port

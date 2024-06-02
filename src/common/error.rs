@@ -10,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
 use tera::Context;
 use thiserror::Error;
+use tracing_log::log::SetLoggerError;
 
-/// Defines frontend errors
+// Defines frontend errors
 #[derive(Error, Debug)]
 pub(crate) enum Error {
     #[error("{0}")]
@@ -22,11 +23,13 @@ pub(crate) enum Error {
     TemplateError(#[from] tera::Error),
     #[error("couldn't fetch time: {0}")]
     TimeError(#[from] SystemTimeError),
+    #[error("couldn't start logger: {0}")]
+    LoggerError(#[from] SetLoggerError),
     #[error("not found")]
     NotFound,
 }
 
-/// Constructs the contents for an error page
+// Constructs the contents for an error page
 #[derive(Debug, Deserialize, Serialize)]
 struct ErrorResponse {
     base_url: String,
