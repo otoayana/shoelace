@@ -11,11 +11,11 @@ pub enum Error {
     #[error("Couldn't find object")]
     ObjectNotFound,
     #[error("Endpoint error: {0}")]
-    EndpointError(#[from] reqwest::Error),
+    Endpoint(#[from] reqwest::Error),
     #[error("Unable to identify mime type")]
-    MimeError,
+    UnidentifiableMime,
     #[error("Keystore error: {0}")]
-    KeystoreError(#[from] KeystoreError),
+    Keystore(#[from] KeystoreError),
 }
 
 // Defines keystore errors
@@ -36,7 +36,7 @@ impl ResponseError for Error {
     fn status_code(&self) -> StatusCode {
         match self {
             Self::ObjectNotFound => StatusCode::NOT_FOUND,
-            Self::EndpointError(val) => {
+            Self::Endpoint(val) => {
                 if let Some(status) = val.status() {
                     match status {
                         reqwest::StatusCode::NOT_FOUND => StatusCode::NOT_FOUND,

@@ -12,7 +12,7 @@ async fn user(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl
 
     match resp {
         Ok(body) => Ok(web::Json(body)),
-        Err(error) => Err(error.to_plaintext()),
+        Err(error) => Err(error.into_plaintext()),
     }
 }
 
@@ -23,6 +23,6 @@ async fn post(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl
 
     match resp {
         Ok(body) => Ok(web::Json(body)),
-        Err(error) => Err(error.to_plaintext()),
+        Err(error) => Err(error.into_plaintext()),
     }
 }

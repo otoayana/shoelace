@@ -60,6 +60,6 @@ pub(crate) async fn user(
                 .content_type(ContentType::xml())
                 .body(channel.to_string()))
         }
-        Err(error) => Err(error.to_plaintext()),
+        Err(error) => Err(error.into_plaintext()),
     }
 }

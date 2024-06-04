@@ -39,7 +39,7 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error>
                 .arg(&[hashstring.clone(), url.to_string()])
                 .query_async(&mut con)
                 .await
-                .map_err(|err| KeystoreError::RedisError(err))?;
+                .map_err(KeystoreError::RedisError)?;
             Ok(hash_url)
         }
         Keystore::None => Ok(url.to_string()),
@@ -64,15 +64,12 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error>
 #[tracing::instrument(err(Display), fields(error, path))]
 #[get("/{image}")]
 pub async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-    let url: String;
-
-    // Retrieves value from keystore
-    match &data.store {
+    let url: String = match &data.store {
         Keystore::Internal(store) => {
             // Lock hash map
             let lock = store.lock().await;
 
-            url = match lock.get(&path.into_inner()) {
+            match lock.get(&path.into_inner()) {
                 Some(object) => object.to_owned(),
                 None => return Err(Error::ObjectNotFound),
             }
@@ -80,14 +77,14 @@ pub async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpR
         Keystore::Redis(store) => {
             let mut con = store.to_owned();
 
-            url = redis::cmd("GET")
+            redis::cmd("GET")
                 .arg(path.into_inner())
                 .query_async(&mut con)
                 .await
-                .map_err(|err| KeystoreError::RedisError(err))?;
+                .map_err(KeystoreError::RedisError)?
         }
         Keystore::None => return Err(Error::NoProxy),
-    }
+    };
 
     // Pipes request to CDN
     let media = get(url).await?.bytes().await?;
@@ -100,6 +97,6 @@ pub async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpR
             .content_type(mime_type.to_string())
             .body(media))
     } else {
-        Err(Error::MimeError)
+        Err(Error::UnidentifiableMime)
     }
 }

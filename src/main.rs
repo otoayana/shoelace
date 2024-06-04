@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     .as_str(),
                 )
-                .custom_response_replace("ERROR_STATUS", |res| log_err(res))
+                .custom_response_replace("ERROR_STATUS", log_err)
                 .log_target("shoelace::web"),
             )
             .app_data(data.clone())
@@ -270,14 +270,14 @@ async fn main() -> std::io::Result<()> {
 
         // Binds server with TLS
         server = server.bind_rustls_0_23(
-            (config.server.listen.clone(), config.server.port.clone()),
+            (config.server.listen.clone(), config.server.port),
             tls_config,
         )?;
 
         info!("TLS has been enabled");
     } else {
         // Binds server without TLS
-        server = server.bind((config.server.listen.clone(), config.server.port.clone()))?;
+        server = server.bind((config.server.listen.clone(), config.server.port))?;
     }
 
     // Now that everything is configured, notify the admin the server is up!

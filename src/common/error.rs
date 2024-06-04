@@ -16,15 +16,15 @@ use tracing_log::log::SetLoggerError;
 #[derive(Error, Debug)]
 pub(crate) enum Error {
     #[error("{0}")]
-    ThreadsError(#[from] SpoolsError),
+    Threads(#[from] SpoolsError),
     #[error("proxy failed: {0}")]
-    ProxyError(#[from] crate::proxy::Error),
+    Proxy(#[from] crate::proxy::Error),
     #[error("template failed to render: {0}")]
-    TemplateError(#[from] tera::Error),
+    Template(#[from] tera::Error),
     #[error("couldn't fetch time: {0}")]
-    TimeError(#[from] SystemTimeError),
+    Time(#[from] SystemTimeError),
     #[error("couldn't start logger: {0}")]
-    LoggerError(#[from] SetLoggerError),
+    Logger(#[from] SetLoggerError),
     #[error("not found")]
     NotFound,
 }
@@ -40,9 +40,9 @@ struct ErrorResponse {
 
 // Plaintext error method
 impl Error {
-    pub(crate) fn to_plaintext(self) -> actix_web::Error {
+    pub(crate) fn into_plaintext(self) -> actix_web::Error {
         match self {
-            Error::ThreadsError(spools_err) => {
+            Error::Threads(spools_err) => {
                 if let SpoolsError::NotFound(_) = spools_err {
                     error::ErrorNotFound(spools_err)
                 } else {
@@ -75,10 +75,10 @@ impl error::ResponseError for Error {
                     )
                     .to_string(), // Needs to be redefined, since in this scope we can't read application data
                 })
-                .map_err(Error::TemplateError)
+                .map_err(Error::Template)
                 .unwrap(),
             )
-            .map_err(Error::TemplateError);
+            .map_err(Error::Template);
 
         // Fallback in case the template fails to render.
         if let Ok(template_body) = template {
@@ -98,7 +98,7 @@ impl error::ResponseError for Error {
     // Map error codes
     fn status_code(&self) -> StatusCode {
         match self {
-            Error::ThreadsError(SpoolsError::NotFound(_)) | Error::NotFound => {
+            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => {
                 StatusCode::NOT_FOUND
             }
             _ => StatusCode::INTERNAL_SERVER_ERROR,

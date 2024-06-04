@@ -35,7 +35,7 @@ impl Keystore {
                     Some(redis) => {
                         // Configure client using the URI provided by the user
                         let client = redis::Client::open(redis.uri)
-                            .map_err(|err| KeystoreError::RedisError(err))
+                            .map_err(KeystoreError::RedisError)
                             .unwrap();
 
                         redis_conninfo = Some(client.clone().get_connection_info().clone().addr);
