@@ -5,6 +5,7 @@ use actix_web::{
     web::{self, Data},
     HttpResponse, Responder, Result,
 };
+use chrono::{TimeZone, Utc};
 use rss::{ChannelBuilder, ImageBuilder, Item, ItemBuilder};
 
 // Build an RSS feed for a profile
@@ -23,11 +24,18 @@ pub(crate) async fn user(
                 .posts
                 .iter()
                 .map(|post| {
+                    let date = Utc.timestamp_opt(post.date as i64, 0).unwrap();
+
                     ItemBuilder::default()
-                        .title(post.body.clone())
-                        .author(format!("@{}", post.author.username))
-                        .description(post.body.clone())
+                        .title(format!(
+                            "Post by {} on {}",
+                            response.name,
+                            date.format("%Y-%m-%d")
+                        ))
                         .link(format!("{}/t/{}", store.base_url, post.code))
+                        .description(post.body.clone())
+                        .author(format!("@{}", post.author.username))
+                        .pub_date(date.to_rfc2822())
                         .build()
                 })
                 .collect();
@@ -41,10 +49,10 @@ pub(crate) async fn user(
             // Build channel
             let channel = ChannelBuilder::default()
                 .title(format!("{} (@{})", response.name, user.clone()))
-                .description(response.bio)
                 .link(format!("{}/@{}", store.base_url, user.clone()))
-                .items(items)
+                .description(response.bio)
                 .image(pfp)
+                .items(items)
                 .build();
 
             // Return feed
