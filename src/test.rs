@@ -1,7 +1,4 @@
-use crate::{
-    api, front, proxy,
-    ShoelaceData,
-};
+use crate::{api, front, proxy, ShoelaceData};
 use actix_web::{test, web, App};
 use spools::{Post, User};
 use std::collections::HashMap;
@@ -71,9 +68,7 @@ async fn user_api() {
     .await;
 
     // Fetches a user
-    let req = test::TestRequest::get()
-        .uri("/user/zuck")
-        .to_request();
+    let req = test::TestRequest::get().uri("/user/zuck").to_request();
     let resp: User = test::call_and_read_body_json(&app, req).await;
 
     // Determines if the user ID is correct
@@ -126,9 +121,7 @@ async fn proxy() {
     .await;
 
     // Requests a user through the API, in order to generate a media hash to check
-    let api_req = test::TestRequest::get()
-        .uri("/user/zuck")
-        .to_request();
+    let api_req = test::TestRequest::get().uri("/user/zuck").to_request();
     let api_resp: User = test::call_and_read_body_json(&app, api_req).await;
 
     // Asserts if response is ok, and has content

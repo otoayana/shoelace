@@ -1,6 +1,9 @@
 use crate::{req, Error, ShoelaceData, TEMPLATES};
 use actix_web::{
-    get, http::header::ContentType, web::{self, Data, Redirect}, HttpResponse, Responder
+    get,
+    http::header::ContentType,
+    web::{self, Data, Redirect},
+    HttpResponse, Responder,
 };
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
@@ -46,7 +49,9 @@ async fn home(store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     context.insert("base_url", &store.base_url);
     let resp = TEMPLATES.render("home.html", &context)?;
 
-    Ok(HttpResponse::Ok().insert_header(ContentType::html()).body(resp))
+    Ok(HttpResponse::Ok()
+        .insert_header(ContentType::html())
+        .body(resp))
 }
 
 // User frontend
@@ -75,7 +80,9 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     // Render template from those values
     let resp = TEMPLATES.render("user.html", &Context::from_serialize(data)?)?;
 
-    Ok(HttpResponse::Ok().insert_header(ContentType::html()).body(resp))
+    Ok(HttpResponse::Ok()
+        .insert_header(ContentType::html())
+        .body(resp))
 }
 
 // Post frontend
@@ -104,7 +111,9 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     // Render template from those values
     let resp = crate::TEMPLATES.render("post.html", &Context::from_serialize(data)?)?;
 
-    Ok(HttpResponse::Ok().insert_header(ContentType::html()).body(resp))
+    Ok(HttpResponse::Ok()
+        .insert_header(ContentType::html())
+        .body(resp))
 }
 
 // User finder endpoint

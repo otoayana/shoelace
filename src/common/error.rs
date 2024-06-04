@@ -98,9 +98,7 @@ impl error::ResponseError for Error {
     // Map error codes
     fn status_code(&self) -> StatusCode {
         match self {
-            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => {
-                StatusCode::NOT_FOUND
-            }
+            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
