@@ -6,6 +6,7 @@ mod api;
 mod common;
 mod front;
 mod proxy;
+mod rss;
 
 pub(crate) use common::config;
 pub(crate) use common::error::Error;
@@ -190,12 +191,13 @@ async fn main() -> std::io::Result<()> {
                 .log_target("shoelace::web"),
             )
             .app_data(data.clone())
-            /* Set 404 page to be the default page shown if no routes are provided. 
+            /* Set 404 page to be the default page shown if no routes are provided.
             If the frontend is displayed, these will be replaced by a plaintext version.*/
             .default_service(web::to(move || {
                 common::error::not_found(config.endpoint.frontend)
             }))
-            .service(web::scope("/proxy").service(proxy::serve));
+            .service(web::scope("/proxy").service(proxy::serve))
+            .service(web::scope("/rss").service(rss::user));
 
         // Frontend
         if config.endpoint.frontend {
