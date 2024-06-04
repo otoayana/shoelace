@@ -19,6 +19,8 @@ key="key.pem"
 frontend=true
 # Toggle the API
 api=true
+# Toggle user RSS feeds
+rss=true
 
 [proxy]
 # Proxy backend. Valid options are:

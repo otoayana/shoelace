@@ -40,6 +40,7 @@ pub struct ShoelaceData {
     pub(crate) log_cdn: bool,
     pub(crate) base_url: String,
     pub(crate) rev: String,
+    pub(crate) rss: bool,
 }
 
 // Bundle in folders on compile time
@@ -156,6 +157,8 @@ async fn main() -> std::io::Result<()> {
         base_url: config.server.base_url.clone(),
         // Git/Cargo revision
         rev,
+        // RSS enabled (for displaying button in FE)
+        rss: config.endpoint.rss,
     });
 
     // Notify the admin about what base URL was stuff
@@ -196,8 +199,7 @@ async fn main() -> std::io::Result<()> {
             .default_service(web::to(move || {
                 common::error::not_found(config.endpoint.frontend)
             }))
-            .service(web::scope("/proxy").service(proxy::serve))
-            .service(web::scope("/rss").service(rss::user));
+            .service(web::scope("/proxy").service(proxy::serve));
 
         // Frontend
         if config.endpoint.frontend {
@@ -217,6 +219,11 @@ async fn main() -> std::io::Result<()> {
         // API
         if config.endpoint.api {
             app = app.service(web::scope("/api").service(api::post).service(api::user));
+        }
+
+        // RSS
+        if config.endpoint.rss {
+            app = app.service(web::scope("/rss").service(rss::user))
         }
 
         // Returns app definition

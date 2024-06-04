@@ -41,6 +41,7 @@ pub(crate) struct Tls {
 pub struct Endpoint {
     pub(crate) frontend: bool,
     pub(crate) api: bool,
+    pub(crate) rss: bool,
 }
 
 // Proxy settings
@@ -91,6 +92,7 @@ impl Settings {
             .set_default("server.tls.key", "")?
             .set_default("endpoint.frontend", true)?
             .set_default("endpoint.api", true)?
+            .set_default("endpoint.rss", true)?
             .set_default("proxy.backend", "internal")?
             .set_default("logging.level", "info")?
             .set_default("logging.log_ips", false)?

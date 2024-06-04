@@ -21,6 +21,7 @@ struct Response {
     time: u128,
     rev: String,
     base_url: String,
+    rss: bool,
 }
 
 // For user find form
@@ -68,6 +69,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
         time: response_time,
         rev: store.rev.clone(),
         base_url: store.base_url.clone(),
+        rss: store.rss,
     };
 
     // Render template from those values
@@ -96,6 +98,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
         time: total_time,
         rev: store.rev.clone(),
         base_url: store.base_url.clone(),
+        rss: store.rss,
     };
 
     // Render template from those values

@@ -17,6 +17,7 @@ async fn user_fe() {
             log_cdn: false,
             base_url: "".to_string(),
             rev: String::new(),
+            rss: false,
         },
     )))
     .await;
@@ -40,6 +41,7 @@ async fn post_fe() {
             log_cdn: false,
             base_url: "".to_string(),
             rev: String::new(),
+            rss: false,
         },
     )))
     .await;
@@ -63,6 +65,7 @@ async fn user_api() {
             log_cdn: false,
             base_url: "".to_string(),
             rev: String::new(),
+            rss: false,
         },
     )))
     .await;
@@ -88,6 +91,7 @@ async fn post_api() {
             log_cdn: false,
             base_url: "".to_string(),
             rev: String::new(),
+            rss: false,
         },
     )))
     .await;
@@ -116,6 +120,7 @@ async fn proxy() {
                 log_cdn: false,
                 base_url: "".to_string(),
                 rev: String::new(),
+                rss: false,
             })),
     )
     .await;
