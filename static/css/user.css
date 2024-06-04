@@ -49,6 +49,23 @@
 	max-width: 1.25em;
 }
 
+/* User feed button */
+.user-feed-link {
+	display: flex;
+	align-items: center;
+}
+
+/* User feed icon */
+.user-feed {
+	height: 18px;
+	opacity: 0.8;
+}
+
+.user-feed:hover {
+	opacity: 1;
+	filter: sepia(100%) saturate(300%) brightness(70%) hue-rotate(310deg);
+}
+
 /* Username, follower count*/
 .user-details {
 	line-height: 0.75em;
@@ -79,9 +96,9 @@
 		font-size: 18pt;
 	}
 
-	/* Align user's profile picture and infobox to the left */ 
+	/* Align user's profile picture and infobox to the left */
 	.user-info {
-			margin: 1vh 0;
+		margin: 1vh 0;
 	}
 
 	.user-pfp {
@@ -105,6 +122,11 @@
 
 /* Light mode adjustments */
 @media (prefers-color-scheme: light) {
+	/* Since we can't shift hues on black objects, make the element a little more transparent instead */
+	.user-feed:hover {
+		opacity: 0.6 !important;
+	}
+
 	/* Make the user details visible */
 	.user-details {
 		color: #555;

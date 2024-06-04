@@ -33,6 +33,11 @@
 				{%- if response.User.verified -%}
 					<img class="user-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
 				{%- endif -%}
+				{%- if rss -%}
+					<a class="user-feed-link" href="{{base_url}}/rss/{{request}}" title="Subscribe to RSS feed">
+						<img class="user-feed" src="/static/img/feed.svg" alt="Subscribe to RSS feed">
+					</a>
+				{%- endif -%}				
 			</div>
 		
 			{# Display user's details, including username and follower count #}

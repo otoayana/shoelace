@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="50.799995mm" height="50.799999mm" viewBox="0 0 50.799995 50.799999" version="1.1" id="svg1" xml:space="preserve"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:svg="http://www.w3.org/2000/svg">
+  <defs id="defs1" />
+  <g id="layer1" transform="translate(-73.001283,-132.11394)">
+    <g id="g1" transform="matrix(8.4666667,0,0,8.4666667,70.586723,114.63333)">
+      <g id="g2" transform="translate(-9.5152011,3.8619942)">
+        <circle class="symbol" cx="10.800385" cy="3.2026453" r="1" id="circle1" style="fill:#ffffff;fill-opacity:1" />
+        <path class="symbol" d="m 9.8003853,1.2026452 a 3,3 0 0 1 2.9999997,3 h 1 A 4,4 0 0 0 9.8003853,0.20264525 Z" id="path1" style="fill:#ffffff;fill-opacity:1" />
+        <path class="symbol" d="M 9.8003853,-0.79735475 A 5,5 0 0 1 14.800385,4.2026452 h 1 a 6,6 0 0 0 -5.9999997,-6 z" id="path2" style="fill:#ffffff;fill-opacity:1" />
+      </g>
+    </g>
+  </g>
+  <style type="text/css" id="style1">
+    @media (prefers-color-scheme: light) {
+            .symbol {
+               fill: #000000 !important;
+            }
+   }
+  </style>
+</svg>
