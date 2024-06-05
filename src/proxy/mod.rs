@@ -17,7 +17,7 @@ use tracing::info;
 
 // Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
-pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error> {
+pub(crate) async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error> {
     // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());
     let hashstring = URL_SAFE.encode(hash).to_string();
@@ -63,7 +63,7 @@ pub async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String, Error>
 // Proxies media from Threads
 #[tracing::instrument(err(Display), fields(error, path))]
 #[get("/{image}")]
-pub async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+pub(crate) async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     let url: String = match &data.store {
         Keystore::Internal(store) => {
             // Lock hash map

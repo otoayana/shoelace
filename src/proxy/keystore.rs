@@ -16,7 +16,7 @@ pub(crate) enum Keystore {
 
 // Possible backends
 #[derive(Debug, Deserialize, Clone)]
-pub enum Backends {
+pub(crate) enum Backends {
     None,
     Internal,
     Redis,

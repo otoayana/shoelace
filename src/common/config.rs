@@ -38,7 +38,7 @@ pub(crate) struct Tls {
 
 // Endpoint settings
 #[derive(Debug, Deserialize)]
-pub struct Endpoint {
+pub(crate) struct Endpoint {
     pub(crate) frontend: bool,
     pub(crate) api: bool,
     pub(crate) rss: bool,
@@ -46,7 +46,7 @@ pub struct Endpoint {
 
 // Proxy settings
 #[derive(Debug, Deserialize)]
-pub struct Proxy {
+pub(crate) struct Proxy {
     pub(crate) backend: Backends,
     pub(crate) redis: Option<Redis>,
 }

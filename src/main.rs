@@ -35,7 +35,7 @@ use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
 
 // Define application data
 #[derive(Debug)]
-pub struct ShoelaceData {
+pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
     pub(crate) log_cdn: bool,
     pub(crate) base_url: String,

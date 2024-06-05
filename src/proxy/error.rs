@@ -5,7 +5,7 @@ use crate::proxy::keystore::Backends;
 
 /// Defines proxy errors
 #[derive(Error, Debug)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("Proxy is unavailable")]
     NoProxy,
     #[error("Couldn't find object")]
@@ -20,7 +20,7 @@ pub enum Error {
 
 // Defines keystore errors
 #[derive(Error, Debug)]
-pub enum KeystoreError {
+pub(crate) enum KeystoreError {
     #[error("{0}")]
     RedisError(#[from] redis::RedisError),
     #[error("invalid config for {0}")]
