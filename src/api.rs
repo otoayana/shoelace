@@ -17,7 +17,7 @@ async fn user(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl
 }
 
 // Post API endpoint
-#[get("/post/{id}")]
+#[get("/post/{post}")]
 async fn post(path: web::Path<String>, store: Data<ShoelaceData>) -> Result<impl Responder> {
     let resp = req::post(path.into_inner(), store).await;
 
