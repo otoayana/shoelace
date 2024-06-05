@@ -4,19 +4,23 @@ use spools::{Post, User};
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 
+const TEST_APP_DATA: ShoelaceData = ShoelaceData {
+    store: crate::proxy::Keystore::None,
+    log_cdn: false,
+    base_url: String::new(),
+    rev: String::new(),
+    rss: false,
+};
+
 // Tests user frontend
 #[actix_web::test]
 async fn user_fe() {
     // Creates an environment using the user frontend and no proxy
-    let app = test::init_service(App::new().service(front::user).app_data(web::Data::new(
-        ShoelaceData {
-            store: crate::proxy::Keystore::None,
-            log_cdn: false,
-            base_url: "".to_string(),
-            rev: String::new(),
-            rss: false,
-        },
-    )))
+    let app = test::init_service(
+        App::new()
+            .service(front::user)
+            .app_data(web::Data::new(TEST_APP_DATA)),
+    )
     .await;
 
     // Fetches a user
@@ -32,15 +36,11 @@ async fn user_fe() {
 #[actix_web::test]
 async fn post_fe() {
     // Creates an environment using the post frontend and no proxy
-    let app = test::init_service(App::new().service(front::post).app_data(web::Data::new(
-        ShoelaceData {
-            store: crate::proxy::Keystore::None,
-            log_cdn: false,
-            base_url: "".to_string(),
-            rev: String::new(),
-            rss: false,
-        },
-    )))
+    let app = test::init_service(
+        App::new()
+            .service(front::post)
+            .app_data(web::Data::new(TEST_APP_DATA)),
+    )
     .await;
 
     // Fetches a post
@@ -56,15 +56,11 @@ async fn post_fe() {
 #[actix_web::test]
 async fn user_api() {
     // Creates an environment using the user API and no proxy
-    let app = test::init_service(App::new().service(api::user).app_data(web::Data::new(
-        ShoelaceData {
-            store: crate::proxy::Keystore::None,
-            log_cdn: false,
-            base_url: "".to_string(),
-            rev: String::new(),
-            rss: false,
-        },
-    )))
+    let app = test::init_service(
+        App::new()
+            .service(api::user)
+            .app_data(web::Data::new(TEST_APP_DATA)),
+    )
     .await;
 
     // Fetches a user
@@ -80,15 +76,11 @@ async fn user_api() {
 #[actix_web::test]
 async fn post_api() {
     // Creates an environment using the post API and no proxy
-    let app = test::init_service(App::new().service(api::post).app_data(web::Data::new(
-        ShoelaceData {
-            store: crate::proxy::Keystore::None,
-            log_cdn: false,
-            base_url: "".to_string(),
-            rev: String::new(),
-            rss: false,
-        },
-    )))
+    let app = test::init_service(
+        App::new()
+            .service(api::post)
+            .app_data(web::Data::new(TEST_APP_DATA)),
+    )
     .await;
 
     // Fetches a post
