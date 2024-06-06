@@ -2558,8 +2558,9 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
 name = "spools"
-version = "0.6.0-alpha"
-source = "git+https://git.sr.ht/~nixgoat/spools#3113e7f58744bc7f01aa3e8ef13ac8bde2da8f7d"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94a905425d699ba003328dc61cbd825ccde57c9bb37a774c1cfecb8369272d47"
 dependencies = [
  "fastrand",
  "reqwest",
