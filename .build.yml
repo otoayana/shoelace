@@ -1,9 +1,15 @@
 image: archlinux
 packages:
   - cargo
+secrets:
+  - 61c66951-0de4-4091-8803-b9dda7f6f66d
 sources:
   - https://git.sr.ht/~nixgoat/shoelace
 tasks:
+  - mirror: |
+      cd shoelace
+      ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+      git push --force --mirror git@github.com:otoayana/shoelace.git
   - build: |
       cd shoelace
       cargo build --release
