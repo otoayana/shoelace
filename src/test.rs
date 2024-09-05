@@ -1,4 +1,4 @@
-use crate::{api, front, proxy, ShoelaceData};
+use crate::{api, frontend, proxy, ShoelaceData};
 use actix_web::{test, web, App};
 use spools::{Post, User};
 use std::collections::HashMap;
@@ -18,7 +18,7 @@ async fn user_fe() {
     // Creates an environment using the user frontend and no proxy
     let app = test::init_service(
         App::new()
-            .service(front::user)
+            .service(frontend::user)
             .app_data(web::Data::new(TEST_APP_DATA)),
     )
     .await;
@@ -38,7 +38,7 @@ async fn post_fe() {
     // Creates an environment using the post frontend and no proxy
     let app = test::init_service(
         App::new()
-            .service(front::post)
+            .service(frontend::post)
             .app_data(web::Data::new(TEST_APP_DATA)),
     )
     .await;

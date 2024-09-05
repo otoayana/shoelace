@@ -4,7 +4,7 @@ extern crate lazy_static;
 // Defines crate modules and re-exports
 mod api;
 mod common;
-mod front;
+mod frontend;
 mod proxy;
 mod rss;
 
@@ -16,7 +16,6 @@ use tracing_log::LogTracer;
 #[cfg(test)]
 mod test;
 
-// Main application begins here
 use crate::common::config::{Settings, Tls};
 use actix_web::{dev::ServiceResponse, middleware::Logger, web, App, HttpServer};
 use actix_web_static_files::ResourceFiles;
@@ -156,7 +155,7 @@ async fn main() -> std::io::Result<()> {
         // Base URL
         base_url: config.server.base_url.clone(),
         // Git/Cargo revision
-        rev: REVISION.clone().to_string(),
+        rev: REVISION.to_string(),
         // RSS enabled (for displaying button in FE)
         rss: config.endpoint.rss,
     });
@@ -209,11 +208,11 @@ async fn main() -> std::io::Result<()> {
             // Adds services to app
             app = app
                 .service(ResourceFiles::new("/static", generated))
-                .service(front::user)
-                .service(front::post)
-                .service(front::home)
-                .service(front::find)
-                .service(front::redirect);
+                .service(frontend::routes::user)
+                .service(frontend::routes::post)
+                .service(frontend::routes::home)
+                .service(frontend::routes::find)
+                .service(frontend::routes::redirect);
         }
 
         // API

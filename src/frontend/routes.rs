@@ -1,10 +1,11 @@
-use crate::{req, Error, ShoelaceData, TEMPLATES};
+use crate::{frontend::templates::{Base, Home}, req, Error, ShoelaceData, TEMPLATES};
 use actix_web::{
     get,
     http::header::ContentType,
     web::{self, Data, Redirect},
     HttpResponse, Responder,
 };
+use askama::Template;
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
@@ -43,15 +44,15 @@ fn time_log() -> Result<u128, SystemTimeError> {
 
 // Landing page
 #[get("/")]
-async fn home(store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-    let mut context = Context::new();
-    context.insert("rev", &store.rev);
-    context.insert("base_url", &store.base_url);
-    let resp = TEMPLATES.render("home.html", &context)?;
+async fn home() -> Result<HttpResponse, Error> {
+    let base = Base::new()?;
+    let template = Home {
+        base
+    }.render().unwrap();
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
-        .body(resp))
+        .body(template))
 }
 
 // User frontend

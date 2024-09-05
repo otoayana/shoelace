@@ -5,6 +5,7 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse, ResponseError,
 };
+use config::ConfigError;
 use git_version::git_version;
 use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
@@ -25,6 +26,8 @@ pub(crate) enum Error {
     Time(#[from] SystemTimeError),
     #[error("couldn't start logger: {0}")]
     Logger(#[from] SetLoggerError),
+    #[error("config error: {0}")]
+    Config(#[from] ConfigError),
     #[error("not found")]
     NotFound,
 }
