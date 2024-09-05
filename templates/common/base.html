@@ -1,5 +1,3 @@
-{% import "common/macro.html" as macro %}
-
 <!DOCTYPE html>
 
 <head>
@@ -9,7 +7,7 @@
 	<link rel="shortcut icon" href="/static/img/shoelace.svg" type="image/x-icon">
 	<meta property="og:site_name" content="Shoelace">
 	<meta property="og:locale" content="en">
-	<meta property="og:logo" content="{{ base_url | safe }}/static/img/shoelace.svg">
+	<meta property="og:logo" content="{{ base.base_url }}/static/img/shoelace.svg">
 	<meta property="og:site_name" content="Shoelace">
 	<title>{% block title %}{% endblock title %} • Shoelace</title>
 	{% block head %}
@@ -26,13 +24,15 @@
 
 	<div class="base-footer">
 		{# Add response time, if applicable #}
-		{% if time %}
-			{{ macro::time_suffix(num=time) }}
-			<span class="base-inline-separator"> • </span>
-		{% endif %}
+		{% match base.time %}
+			{% when Some with (time) %}
+				{{ time }}
+				<span class="base-inline-separator"> • </span>
+			{% when None %}
+		{% endmatch %}
 		<a href="https://sr.ht/~nixgoat/shoelace">hub</a><span class="base-inline-separator"> • </span>
 		<a href="https://liberapay.com/nixgoat">donate</a><span class="base-inline-separator"> • </span>
 		{# Add Git revision #}
-		<a href="https://git.sr.ht/~nixgoat/shoelace/commit/{{ rev | trim_end_matches(pat=".0") }}">{{ rev | trim_end_matches(pat=".0") }}</a>
+		<a href="https://git.sr.ht/~nixgoat/shoelace/commit/{{ base.rev }}">{{ base.rev }}</a>
 	</div>
 </body>
