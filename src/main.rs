@@ -43,6 +43,12 @@ pub(crate) struct ShoelaceData {
     pub(crate) rss: bool,
 }
 
+pub const REVISION: &str = git_version!(
+    args = ["--always", "--dirty=-dirty"],
+    fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+);
+
+
 // Bundle in folders on compile time
 pub(crate) static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
@@ -132,16 +138,10 @@ async fn main() -> std::io::Result<()> {
     LogTracer::init().map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
     // Fetch revision
-    let rev = git_version!(
-        args = ["--always", "--dirty=-dirty"],
-        fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
-    )
-    .to_string();
-
     // Startup message
     info!(
         "👟 Shoelace {} | PID: {} | https://sr.ht/~nixgoat/shoelace",
-        &rev,
+        REVISION,
         id()
     );
 
@@ -156,7 +156,7 @@ async fn main() -> std::io::Result<()> {
         // Base URL
         base_url: config.server.base_url.clone(),
         // Git/Cargo revision
-        rev,
+        rev: REVISION.clone().to_string(),
         // RSS enabled (for displaying button in FE)
         rss: config.endpoint.rss,
     });
