@@ -42,10 +42,13 @@ pub(crate) struct ShoelaceData {
     pub(crate) rss: bool,
 }
 
-pub const REVISION: &str = git_version!(
-    args = ["--always", "--dirty=-dirty"],
-    fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
-);
+lazy_static! {
+    pub static ref REVISION: &'static str = git_version!(
+        args = ["--always", "--dirty=-dirty"],
+        fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+    )
+    .trim_end_matches(".0");
+}
 
 
 // Bundle in folders on compile time
@@ -140,7 +143,7 @@ async fn main() -> std::io::Result<()> {
     // Startup message
     info!(
         "👟 Shoelace {} | PID: {} | https://sr.ht/~nixgoat/shoelace",
-        REVISION,
+        REVISION.to_string(),
         id()
     );
 
