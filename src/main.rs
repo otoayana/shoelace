@@ -43,8 +43,8 @@ pub(crate) struct ShoelaceData {
 }
 
 lazy_static! {
-    pub static ref REVISION: String = {
-        let mut rev = git_version!(
+    pub static ref REVISION: &'static str = {
+        let mut rev: String = git_version!(
             args = ["--always", "--dirty=-dirty"],
             fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
         ).to_string();
@@ -54,7 +54,7 @@ lazy_static! {
             rev = rev.to_string().chars().take(length - 2).collect::<String>();
         }
     
-        rev
+        Box::leak(rev.into_boxed_str())
     };
 }
 
