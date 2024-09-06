@@ -42,10 +42,21 @@ pub(crate) struct ShoelaceData {
     pub(crate) rss: bool,
 }
 
-pub const REVISION: &str = git_version!(
-    args = ["--always", "--dirty=-dirty"],
-    fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
-);
+lazy_static! {
+    pub static ref REVISION: String = {
+        let mut rev = git_version!(
+            args = ["--always", "--dirty=-dirty"],
+            fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+        ).to_string();
+    
+        if rev.ends_with(".0") {
+            let length = rev.len();
+            rev = rev.to_string().chars().take(length - 2).collect::<String>();
+        }
+    
+        rev
+    };
+}
 
 
 // Bundle in folders on compile time
@@ -140,7 +151,7 @@ async fn main() -> std::io::Result<()> {
     // Startup message
     info!(
         "👟 Shoelace {} | PID: {} | https://sr.ht/~nixgoat/shoelace",
-        REVISION,
+        REVISION.to_string(),
         id()
     );
 

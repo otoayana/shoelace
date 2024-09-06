@@ -28,7 +28,7 @@ impl Base {
         let config = Settings::new()?;
         
         Ok(Base {
-            rev: REVISION,
+            rev: &REVISION,
             base_url: config.server.base_url,
             time: None
         })
