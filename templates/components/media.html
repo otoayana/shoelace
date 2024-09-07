@@ -1,0 +1,20 @@
+	{%- if closure == MediaClosure::Start -%}
+	<div class="post-media-row">
+	{%- endif -%}
+	{# Embed media depending on type and whether it's subposted or not #}
+	{%- if input.kind == MediaKind::Image && !preview -%}
+		<img class="post-media-object" alt="{{alt}}" title="{{alt}}" src="{{input.content}}">
+	{%- else if input.kind == MediaKind::Image -%}
+		<img class="post-media-object" alt="{{alt}}" title="{{alt}}" src="{{input.thumbnail}}">
+	{%- else if input.kind == MediaKind::Video && !preview -%}
+		<video controls class="post-media-object" alt="{{alt}}" title="{{alt}}"
+			poster="{{input.thumbnail}}" src="{{input.content}}">
+		</video>
+	{%- else -%}
+		<img class="post-media-object" alt="{{alt}}" title="{{alt}}" src="{{input.thumbnail}}"
+			alt="{{alt}}">
+	{%- endif -%}
+
+	{%- if closure == MediaClosure::End  -%}
+	</div>
+	{%- endif -%}

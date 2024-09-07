@@ -3,7 +3,7 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 use askama::Template;
 use chrono::DateTime;
 use numfmt::{Formatter, Precision, Scales};
-use spools::{Post, Subpost, User};
+use spools::{Media, MediaKind, Post, Subpost, User};
 
 use crate::{config::Settings, Error};
 use crate::REVISION;
@@ -17,24 +17,75 @@ fn common_fmt<'a>(value: u64) -> String {
     format.to_owned()
 }
 
+#[derive(Debug, PartialEq)]
+enum MediaClosure {
+    Start,
+    End,
+    Single
+}
+
+#[derive(Debug, Template)]
+#[template(path = "components/media.html")]
+struct FormattedMedia<'a> {
+    input: Media,
+    alt: &'a str,
+    preview: bool,
+    closure: MediaClosure
+}
+
+trait MediaRender {
+    fn render(&self, preview: bool, index: usize, length: usize) -> Result<String, Error>;
+}
+
+impl<'a> MediaRender for Media {
+    fn render(&self, preview: bool, index: usize, length: usize) -> Result<String, Error> {
+        let closure: MediaClosure;
+        dbg!(index, length - 1);
+
+        if index % 2 == 0 && index != length - 1 {
+            closure = MediaClosure::Start
+        } else if index % 2 != 0 {
+            closure = MediaClosure::End
+        } else {
+            closure = MediaClosure::Single
+        }
+
+        let alt: &'a str = if let Some(alt) = self.alt.clone() {
+            Box::leak(alt.into_boxed_str())
+        } else {
+            ""
+        };
+        
+        let template = FormattedMedia {
+            input: self.clone(),
+            alt,
+            preview,
+            closure,
+        };
+
+        Ok(template.render()?)
+    }
+}
+
 #[derive(Debug, Template)]
 #[template(path = "components/post.html")]
 struct FormattedSubpost<'a> {
+    input: Subpost,
     code: Option<&'a str>,
-    // The compiler doesn't recognize Askama will use these lol
-    #[allow(dead_code)]
     date: &'a str,
+    // The compiler doesn't recognize Askama will use these
     #[allow(dead_code)]
     likes: &'a str,
-    input: Subpost,
+    #[allow(dead_code)]
+    media: Vec<String>
 }
 
-trait BlockExtension {
-    fn render(&self) -> Result<String, Error>;
+trait SubpostRender {
+    fn render(&self, preview: bool) -> Result<String, Error>;
 }
 
-impl BlockExtension for Subpost {
-    fn render(&self) -> Result<String, Error> {
+impl SubpostRender for Subpost {
+    fn render(&self, preview: bool) -> Result<String, Error> {
         /*
         Subposts are recognized passively, by detecting the prescence
         of a code ID, and matching an Option value within the template.
@@ -53,14 +104,27 @@ impl BlockExtension for Subpost {
 
         let likes = common_fmt(self.likes);
 
-        // TODO(otoayana): add media rendering
+        let media_length = self.media.len();
+        let mut media_cursor = 0;
+
+        let media = self.media.clone().iter().map(|o| { 
+            let render = o.render(preview, media_cursor, media_length);
+            media_cursor += 1;
+            render
+        }).collect::<Result<Vec<String>, Error>>();
+
+        // TODO(otoayana): find and htmlify links or mentions
         
-        let template = FormattedSubpost { code, date: date.as_str(), likes: &likes, input: self.clone() };
+        let template = FormattedSubpost { input: self.clone(), code, date: date.as_str(), likes: &likes, media: media? };
         Ok(format!("{}", template.render()?))
     } 
 }
 
-impl BlockExtension for Post {
+trait PostRender {
+    fn render(&self) -> Result<String, Error>;
+}
+
+impl PostRender for Post {
     fn render(&self) -> Result<String, Error> {
         // Rendering already handled by Subpost
         let subpost = Subpost {
@@ -72,7 +136,7 @@ impl BlockExtension for Post {
             likes: self.likes,
         };
 
-        Ok(subpost.render()?)
+        Ok(subpost.render(false)?)
     }
 }
 
@@ -141,7 +205,7 @@ trait UserUtils {
 }
 
 #[derive(Debug, Template)]
-#[template(path = "user.html", print = "all")]
+#[template(path = "user.html")]
 pub struct UserView<'a> {
     pub base: Base,
     pub input: &'a str,
