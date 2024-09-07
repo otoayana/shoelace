@@ -8,8 +8,9 @@ sources:
 tasks:
   - mirror: |
       cd shoelace
+      git remote set-head origin -d
       ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
-      git push --force --mirror git@github.com:otoayana/shoelace.git
+      git push --prune git@github.com:otoayana/shoelace.git '+refs/remotes/origin/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
   - build: |
       cd shoelace
       cargo build --release
