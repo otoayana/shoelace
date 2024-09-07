@@ -9,7 +9,7 @@ use spools::{Media, MediaKind, Post, Subpost, User};
 use crate::REVISION;
 use crate::{config::Settings, Error};
 
-fn common_fmt<'a>(value: u64) -> String {
+fn common_fmt(value: u64) -> String {
     let mut formatter = Formatter::new()
         .scales(Scales::short())
         .precision(Precision::Significance(2));
@@ -93,7 +93,7 @@ impl SubpostRender for Subpost {
         */
         let mut code: Option<&str> = None;
 
-        if self.code.len() > 0 {
+        if !self.code.is_empty() {
             code = Some(&self.code)
         }
 
@@ -128,7 +128,7 @@ impl SubpostRender for Subpost {
             likes: &likes,
             media: media?,
         };
-        Ok(format!("{}", template.render()?))
+        Ok((template.render()?).to_string())
     }
 }
 
@@ -148,7 +148,7 @@ impl PostRender for Post {
             likes: self.likes,
         };
 
-        Ok(subpost.render(false)?)
+        subpost.render(false)
     }
 }
 
@@ -205,17 +205,15 @@ impl Base {
 
         if start {
             self.time = Some(now);
-        } else {
-            if let Some(time) = self.time {
-                if time > now {
-                    // TODO(otoayana): make this error more idiomatic
-                    return Err(Error::NotFound);
-                }
-
-                self.time = Some(now - time);
-            } else {
+        } else if let Some(time) = self.time {
+            if time > now {
+                // TODO(otoayana): make this error more idiomatic
                 return Err(Error::NotFound);
             }
+
+            self.time = Some(now - time);
+        } else {
+            return Err(Error::NotFound);
         }
 
         Ok(())
@@ -248,7 +246,7 @@ impl<'a> UserUtils for UserView<'a> {
             &link
                 .trim_start_matches("http://")
                 .trim_start_matches("https://")
-                .trim_end_matches("/")
+                .trim_end_matches('/')
                 .to_string()
         )
     }

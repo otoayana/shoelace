@@ -87,12 +87,15 @@ impl error::ResponseError for Error {
         let template: Result<String, Error> = Ok(self.to_string());
 
         // Fallback in case the template fails to render.
-        if let Ok(template_body) = template {
-            body = template_body;
-            status_code = self.status_code()
-        } else {
-            body = format!("{}\n{}", template.unwrap_err(), self);
-            status_code = StatusCode::INTERNAL_SERVER_ERROR;
+        match template {
+            Ok(template_body) => {
+                body = template_body;
+                status_code = self.status_code()
+            }
+            Err(error) => {
+                body = format!("{}\n{}", error, self);
+                status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            }
         }
 
         // Send response
