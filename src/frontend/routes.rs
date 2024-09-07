@@ -1,4 +1,4 @@
-use crate::{frontend::templates::{Base, Home}, req, Error, ShoelaceData, TEMPLATES};
+use crate::{frontend::templates::{Base, HomeView, UserView}, req, Error, ShoelaceData};
 use actix_web::{
     get,
     http::header::ContentType,
@@ -46,9 +46,9 @@ fn time_log() -> Result<u128, SystemTimeError> {
 #[get("/")]
 async fn home() -> Result<HttpResponse, Error> {
     let base = Base::new()?;
-    let template = Home {
+    let template = HomeView {
         base
-    }.render().unwrap();
+    }.render()?;
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
@@ -58,32 +58,22 @@ async fn home() -> Result<HttpResponse, Error> {
 // User frontend
 #[get("/@{user}")]
 async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-    // Get current timestamp before request
-    let start_time = time_log()?;
+    let mut base = Base::new()?;
+    base.timer(true)?;
 
-    // Process user request
     let req = req::user(user.clone(), store.to_owned()).await?;
 
-    // Get request time
-    let end_time = time_log()?;
-    let response_time = end_time - start_time;
+    base.timer(false)?;
 
-    // Define response values
-    let data = Response {
-        request: user.into_inner(),
-        response: ResponseTypes::User(req),
-        time: response_time,
-        rev: store.rev.clone(),
-        base_url: store.base_url.clone(),
-        rss: store.rss,
-    };
-
-    // Render template from those values
-    let resp = TEMPLATES.render("user.html", &Context::from_serialize(data)?)?;
+    let template = UserView {
+        base,
+        input: &user.into_inner(),
+        output: req,
+    }.render()?;
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
-        .body(resp))
+        .body(template))
 }
 
 // Post frontend
@@ -110,7 +100,8 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     };
 
     // Render template from those values
-    let resp = crate::TEMPLATES.render("post.html", &Context::from_serialize(data)?)?;
+    //let resp = crate::TEMPLATES.render("post.html", &Context::from_serialize(data)?)?;
+    let resp = String::new();
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
