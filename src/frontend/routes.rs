@@ -1,4 +1,7 @@
-use crate::{frontend::templates::{Base, HomeView, UserView}, req, Error, ShoelaceData};
+use crate::{
+    frontend::templates::{Base, HomeView, UserView},
+    req, Error, ShoelaceData,
+};
 use actix_web::{
     get,
     http::header::ContentType,
@@ -9,7 +12,6 @@ use askama::Template;
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
-
 
 #[derive(Debug, Deserialize, Serialize)]
 enum ResponseTypes {
@@ -46,9 +48,7 @@ fn time_log() -> Result<u128, SystemTimeError> {
 #[get("/")]
 async fn home() -> Result<HttpResponse, Error> {
     let base = Base::new()?;
-    let template = HomeView {
-        base
-    }.render()?;
+    let template = HomeView { base }.render()?;
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
@@ -69,7 +69,8 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
         base,
         input: &user.into_inner(),
         output: req,
-    }.render()?;
+    }
+    .render()?;
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())

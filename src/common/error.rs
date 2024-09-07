@@ -68,22 +68,22 @@ impl error::ResponseError for Error {
 
         // Renders error template
         /*let template = crate::TEMPLATES
-            .render(
-                "common/error.html",
-                &Context::from_serialize(ErrorResponse {
-                    base_url: String::new(),
-                    status_code: self.status_code().as_u16().to_string(),
-                    error: self.to_string(),
-                    rev: git_version!(
-                        args = ["--always", "--dirty=-dirty"],
-                        fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
-                    )
-                    .to_string(), // Needs to be redefined, since in this scope we can't read application data
-                })
-                .map_err(Error::LegacyTemplate)
-                .unwrap(),
-            )
-            .map_err(Error::LegacyTemplate);*/
+        .render(
+            "common/error.html",
+            &Context::from_serialize(ErrorResponse {
+                base_url: String::new(),
+                status_code: self.status_code().as_u16().to_string(),
+                error: self.to_string(),
+                rev: git_version!(
+                    args = ["--always", "--dirty=-dirty"],
+                    fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
+                )
+                .to_string(), // Needs to be redefined, since in this scope we can't read application data
+            })
+            .map_err(Error::LegacyTemplate)
+            .unwrap(),
+        )
+        .map_err(Error::LegacyTemplate);*/
         let template: Result<String, Error> = Ok(self.to_string());
 
         // Fallback in case the template fails to render.

@@ -2,12 +2,12 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 use askama::Template;
 use chrono::DateTime;
+use millisecond::Millisecond;
 use numfmt::{Formatter, Precision, Scales};
 use spools::{Media, MediaKind, Post, Subpost, User};
-use millisecond::Millisecond;
 
-use crate::{config::Settings, Error};
 use crate::REVISION;
+use crate::{config::Settings, Error};
 
 fn common_fmt<'a>(value: u64) -> String {
     let mut formatter = Formatter::new()
@@ -22,7 +22,7 @@ fn common_fmt<'a>(value: u64) -> String {
 enum MediaClosure {
     Start,
     End,
-    Single
+    Single,
 }
 
 #[derive(Debug, Template)]
@@ -31,7 +31,7 @@ struct FormattedMedia<'a> {
     input: Media,
     alt: &'a str,
     preview: bool,
-    closure: MediaClosure
+    closure: MediaClosure,
 }
 
 trait MediaRender {
@@ -56,7 +56,7 @@ impl<'a> MediaRender for Media {
         } else {
             ""
         };
-        
+
         let template = FormattedMedia {
             input: self.clone(),
             alt,
@@ -78,7 +78,7 @@ struct FormattedSubpost<'a> {
     #[allow(dead_code)]
     likes: &'a str,
     #[allow(dead_code)]
-    media: Vec<String>
+    media: Vec<String>,
 }
 
 trait SubpostRender {
@@ -108,17 +108,28 @@ impl SubpostRender for Subpost {
         let media_length = self.media.len();
         let mut media_cursor = 0;
 
-        let media = self.media.clone().iter().map(|o| { 
-            let render = o.render(preview, media_cursor, media_length);
-            media_cursor += 1;
-            render
-        }).collect::<Result<Vec<String>, Error>>();
+        let media = self
+            .media
+            .clone()
+            .iter()
+            .map(|o| {
+                let render = o.render(preview, media_cursor, media_length);
+                media_cursor += 1;
+                render
+            })
+            .collect::<Result<Vec<String>, Error>>();
 
         // TODO(otoayana): find and htmlify links or mentions
-        
-        let template = FormattedSubpost { input: self.clone(), code, date: date.as_str(), likes: &likes, media: media? };
+
+        let template = FormattedSubpost {
+            input: self.clone(),
+            code,
+            date: date.as_str(),
+            likes: &likes,
+            media: media?,
+        };
         Ok(format!("{}", template.render()?))
-    } 
+    }
 }
 
 trait PostRender {
@@ -154,12 +165,12 @@ impl Base {
     /// Spawns a new Base object
     pub fn new() -> Result<Base, Error> {
         let config = Settings::new()?;
-        
+
         Ok(Base {
             rev: &REVISION,
             rss: config.endpoint.rss,
             base_url: config.server.base_url,
-            time: None
+            time: None,
         })
     }
 
@@ -167,20 +178,21 @@ impl Base {
     fn now() -> Result<u128, SystemTimeError> {
         let start = SystemTime::now();
         let since_the_epoch = start.duration_since(UNIX_EPOCH)?.as_millis();
-    
+
         Ok(since_the_epoch)
     }
 
     fn display_timer(&self) -> Result<String, Error> {
         if let Some(time) = self.time {
             let millis = Millisecond::from_millis(time);
-            Ok(
-                if millis.seconds == 0 {
-                    format!("{}ms", millis.millis)
-                } else {
-                    format!("{:.2}s", millis.seconds as f64 + millis.millis as f64 / 1000.0)
-                }
-            )
+            Ok(if millis.seconds == 0 {
+                format!("{}ms", millis.millis)
+            } else {
+                format!(
+                    "{:.2}s",
+                    millis.seconds as f64 + millis.millis as f64 / 1000.0
+                )
+            })
         } else {
             // TODO(otoayana): make this error more idiomatic
             Err(Error::NotFound)
@@ -197,12 +209,12 @@ impl Base {
             if let Some(time) = self.time {
                 if time > now {
                     // TODO(otoayana): make this error more idiomatic
-                    return Err(Error::NotFound)
+                    return Err(Error::NotFound);
                 }
 
                 self.time = Some(now - time);
             } else {
-                return Err(Error::NotFound)
+                return Err(Error::NotFound);
             }
         }
 
@@ -213,9 +225,8 @@ impl Base {
 #[derive(Debug, Template)]
 #[template(path = "home.html")]
 pub struct HomeView {
-    pub base: Base
+    pub base: Base,
 }
-
 
 trait UserUtils {
     fn link_format(link: String) -> String;
@@ -226,11 +237,19 @@ trait UserUtils {
 pub struct UserView<'a> {
     pub base: Base,
     pub input: &'a str,
-    pub output: User
+    pub output: User,
 }
 
 impl<'a> UserUtils for UserView<'a> {
     fn link_format(link: String) -> String {
-        format!("<a href=\"{}\">{}</a>", &link, &link.trim_start_matches("http://").trim_start_matches("https://").trim_end_matches("/").to_string())
+        format!(
+            "<a href=\"{}\">{}</a>",
+            &link,
+            &link
+                .trim_start_matches("http://")
+                .trim_start_matches("https://")
+                .trim_end_matches("/")
+                .to_string()
+        )
     }
 }

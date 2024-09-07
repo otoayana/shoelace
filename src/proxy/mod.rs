@@ -63,7 +63,10 @@ pub(crate) async fn store(url: &str, data: Data<ShoelaceData>) -> Result<String,
 // Proxies media from Threads
 #[tracing::instrument(err(Display), fields(error, path))]
 #[get("/{image}")]
-pub(crate) async fn serve(path: Path<String>, data: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+pub(crate) async fn serve(
+    path: Path<String>,
+    data: Data<ShoelaceData>,
+) -> Result<HttpResponse, Error> {
     let url: String = match &data.store {
         Keystore::Internal(store) => {
             // Lock hash map

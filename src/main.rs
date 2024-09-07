@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate lazy_static;
+ crate lazy_static;
 
 // Defines crate modules and re-exports
 mod api;
