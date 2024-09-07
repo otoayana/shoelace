@@ -8,18 +8,16 @@ use actix_web::{
 use chrono::{TimeZone, Utc};
 use rss::{ChannelBuilder, ImageBuilder, Item, ItemBuilder};
 
-// Build an RSS feed for a profile
+/// Build an RSS feed for a profile
 #[get("/{user}")]
 pub(crate) async fn user(
     user: web::Path<String>,
     store: Data<ShoelaceData>,
 ) -> Result<impl Responder> {
-    // Fetch user
     let request = req::user(user.clone(), store.to_owned()).await;
 
     match request {
         Ok(response) => {
-            // Serialize posts
             let items: Vec<Item> = response
                 .posts
                 .iter()
@@ -40,13 +38,11 @@ pub(crate) async fn user(
                 })
                 .collect();
 
-            // Include profile picture
             let pfp = ImageBuilder::default()
                 .title(format!("@{}'s profile picture", user.clone()))
                 .url(response.pfp.clone())
                 .build();
 
-            // Build channel
             let channel = ChannelBuilder::default()
                 .title(format!("{} (@{})", response.name, user.clone()))
                 .link(format!("{}/@{}", store.base_url, user.clone()))
@@ -55,7 +51,6 @@ pub(crate) async fn user(
                 .items(items)
                 .build();
 
-            // Return feed
             Ok(HttpResponse::Ok()
                 .content_type(ContentType::xml())
                 .body(channel.to_string()))

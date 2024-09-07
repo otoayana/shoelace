@@ -9,7 +9,7 @@ use askama::Template;
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
 use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
-use tera::Context;
+
 
 #[derive(Debug, Deserialize, Serialize)]
 enum ResponseTypes {
@@ -90,7 +90,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
     let total_time = end_time - start_time;
 
     // Define response values
-    let data = Response {
+    let _data = Response {
         request: post.into_inner(),
         response: ResponseTypes::Post(req),
         time: total_time,

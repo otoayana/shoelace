@@ -6,10 +6,10 @@ use actix_web::{
     HttpResponse, ResponseError,
 };
 use config::ConfigError;
-use git_version::git_version;
+
 use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
-use tera::Context;
+
 use thiserror::Error;
 use tracing_log::log::SetLoggerError;
 
