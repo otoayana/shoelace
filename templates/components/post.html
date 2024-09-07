@@ -7,7 +7,6 @@
 	<div class="post-header">
 		<img class="post-pfp" src="{{input.author.pfp}}">
 		<a class="post-username" href="/@{{input.author.username}}">@{{input.author.username}}</a>
-		{# Add verification badge if user is verified #}
 		{%- if input.author.verified -%}
 			<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
 		{%- endif -%}
@@ -27,9 +26,12 @@
 		</p>
 	</div>
 	<p class="post-body">{{input.body}}</p>
-	{# Add attachments if the post has any #}
-	{%- if input.media.len() > 0 -%}
-		{# {{ self::media(media=input.media, subpost=clickable) }} #}
+	{%- if media.len() > 0 -%}
+		<div class="post-media">
+			{% for object in media %}
+				{{ object|safe }}
+			{% endfor %}
+		</div>
 	{%- endif -%}
 	<div class="post-footer">
 		<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">

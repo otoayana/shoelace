@@ -20,7 +20,6 @@ use crate::common::config::{Settings, Tls};
 use actix_web::{dev::ServiceResponse, middleware::Logger, web, App, HttpServer};
 use actix_web_static_files::ResourceFiles;
 use git_version::git_version;
-use include_dir::{include_dir, Dir};
 use proxy::Keystore;
 use std::{
     fs::File,
@@ -28,7 +27,6 @@ use std::{
     process::id,
     sync::Mutex,
 };
-use tera::Tera;
 use tracing::{info, instrument, warn};
 use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
 
@@ -51,44 +49,6 @@ lazy_static! {
 }
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
-
-/*
-
-// Bundle in folders on compile time
-pub(crate) static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
-
-// Import templates
-lazy_static! {
-    pub(crate) static ref TEMPLATES: Tera = {
-        let mut tera = Tera::default();
-
-        // Fetches templates from included template directory
-        let templates: Vec<(&str, &str)> = TEMPLATES_DIR
-            .find("\*\*\/\*.html")
-            .expect("Templates not found")
-            .map(|file| {
-                (
-                    file.path().to_str().unwrap_or(""),
-                    file.as_file()
-                        .expect("Not a file")
-                        .contents_utf8()
-                        .unwrap_or(""),
-                )
-            })
-            .collect::<Vec<(&str, &str)>>();
-
-        // Adds them to our Tera variable
-        match tera.add_raw_templates(templates) {
-            Ok(_) => tera,
-            Err(error) => {
-                eprintln!("Parsing error(s): {}", error);
-                ::std::process::exit(1)
-            }
-        }
-    };
-}
-
-*/
 
 // Sets characters depending on web server response code
 fn log_err(res: &ServiceResponse) -> String {
