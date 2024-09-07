@@ -20,8 +20,10 @@ pub(crate) enum Error {
     Threads(#[from] SpoolsError),
     #[error("proxy failed: {0}")]
     Proxy(#[from] crate::proxy::Error),
+    #[error("(legacy) template failed to render: {0}")]
+    LegacyTemplate(#[from] tera::Error),
     #[error("template failed to render: {0}")]
-    Template(#[from] tera::Error),
+    Template(#[from] askama::Error),
     #[error("couldn't fetch time: {0}")]
     Time(#[from] SystemTimeError),
     #[error("couldn't start logger: {0}")]
@@ -65,7 +67,7 @@ impl error::ResponseError for Error {
         let status_code: StatusCode;
 
         // Renders error template
-        let template = crate::TEMPLATES
+        /*let template = crate::TEMPLATES
             .render(
                 "common/error.html",
                 &Context::from_serialize(ErrorResponse {
@@ -78,10 +80,11 @@ impl error::ResponseError for Error {
                     )
                     .to_string(), // Needs to be redefined, since in this scope we can't read application data
                 })
-                .map_err(Error::Template)
+                .map_err(Error::LegacyTemplate)
                 .unwrap(),
             )
-            .map_err(Error::Template);
+            .map_err(Error::LegacyTemplate);*/
+        let template: Result<String, Error> = Ok(self.to_string());
 
         // Fallback in case the template fails to render.
         if let Ok(template_body) = template {

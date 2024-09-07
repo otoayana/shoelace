@@ -58,10 +58,12 @@ lazy_static! {
     };
 }
 
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
+/*
 
 // Bundle in folders on compile time
 pub(crate) static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
-include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 // Import templates
 lazy_static! {
@@ -70,7 +72,7 @@ lazy_static! {
 
         // Fetches templates from included template directory
         let templates: Vec<(&str, &str)> = TEMPLATES_DIR
-            .find("**/*.html")
+            .find("\*\*\/\*.html")
             .expect("Templates not found")
             .map(|file| {
                 (
@@ -93,6 +95,8 @@ lazy_static! {
         }
     };
 }
+
+*/
 
 // Sets characters depending on web server response code
 fn log_err(res: &ServiceResponse) -> String {

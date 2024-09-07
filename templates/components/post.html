@@ -1,0 +1,43 @@
+{% match code %}
+  {% when Some with (_) %}
+    <div class="subpost">
+  {% when None %}
+{% endmatch %}
+<div class="post">
+	<div class="post-header">
+		<img class="post-pfp" src="{{input.author.pfp}}">
+		<a class="post-username" href="/@{{input.author.username}}">@{{input.author.username}}</a>
+		{# Add verification badge if user is verified #}
+		{%- if input.author.verified -%}
+			<img class="post-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
+		{%- endif -%}
+		<p class="base-inline-separator">•</p>
+		<p class="post-faint">
+		{%- match code -%}
+      {% when Some with (value) %}
+			<a class="post-clickable-time" href="/t/{{value}}">
+      {% when None %}
+		{%- endmatch -%}
+		{{ date }}
+		{% match code %}
+      {% when Some with (_) %}
+			</a>
+      {% when None %}
+    {% endmatch %}
+		</p>
+	</div>
+	<p class="post-body">{{input.body}}</p>
+	{# Add attachments if the post has any #}
+	{%- if input.media.len() > 0 -%}
+		{# {{ self::media(media=input.media, subpost=clickable) }} #}
+	{%- endif -%}
+	<div class="post-footer">
+		<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">
+		<p class="post-like-count post-faint">{{ input.likes }}</p>
+	</div>
+</div>
+{% match code %}
+  {% when Some with (_) %}
+    </div>
+  {% when None %}
+{% endmatch %}
