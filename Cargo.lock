@@ -1648,6 +1648,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
 
 [[package]]
+name = "millisecond"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7e35968c80c287431248d4a9c629f07a2a745c1b15a2c3805308cf5cff24c84"
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2595,6 +2601,7 @@ dependencies = [
  "include_dir",
  "infer",
  "lazy_static",
+ "millisecond",
  "numfmt",
  "redis",
  "reqwest",

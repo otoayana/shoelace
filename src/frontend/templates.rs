@@ -4,6 +4,7 @@ use askama::Template;
 use chrono::DateTime;
 use numfmt::{Formatter, Precision, Scales};
 use spools::{Media, MediaKind, Post, Subpost, User};
+use millisecond::Millisecond;
 
 use crate::{config::Settings, Error};
 use crate::REVISION;
@@ -170,6 +171,22 @@ impl Base {
         Ok(since_the_epoch)
     }
 
+    fn display_timer(&self) -> Result<String, Error> {
+        if let Some(time) = self.time {
+            let millis = Millisecond::from_millis(time);
+            Ok(
+                if millis.seconds == 0 {
+                    format!("{}ms", millis.millis)
+                } else {
+                    format!("{:.2}s", millis.seconds as f64 + millis.millis as f64 / 1000.0)
+                }
+            )
+        } else {
+            // TODO(otoayana): make this error more idiomatic
+            Err(Error::NotFound)
+        }
+    }
+
     /// Sets the response time value
     pub fn timer(&mut self, start: bool) -> Result<(), Error> {
         let now = Base::now()?;
@@ -179,7 +196,7 @@ impl Base {
         } else {
             if let Some(time) = self.time {
                 if time > now {
-                    // TODO(lux): make this error more idiomatic
+                    // TODO(otoayana): make this error more idiomatic
                     return Err(Error::NotFound)
                 }
 

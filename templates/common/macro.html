@@ -1,20 +1,3 @@
-{# Time suffix (for request times) #}
-{% macro time_suffix(num) %}
-	{# Minutes #}
-	{%- if (num / 1000000) > 1 -%}
-		{{ num / 1000000 | round(method="floor", precision=2) }}m
-	{# Tens of seconds #}
-	{%- elif (num / 100000) > 1 -%}
-		{{ num / 1000 | round }}s
-	{# Seconds #}
-	{%- elif (num / 1000) > 1 -%}
-		{{ num / 1000 | round(method="floor", precision=2) }}s
-	{# Milliseconds #}
-	{%- else -%}
-		{{ num }}ms
-	{%- endif -%}
-{% endmacro suffix %}
-
 {# Adds hyperlinks on body #}
 {% macro url(body) %}
 	{# Unwrap line breaks, split body on every space, and define the return variable #}
