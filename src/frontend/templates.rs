@@ -119,17 +119,25 @@ impl SubpostRender for Subpost {
 
         // TODO(otoayana): find and link mentions
         let mut body = self.body.clone();
-        let mut offset: usize = 0;
+        let mut offset: isize = 0;
         let finder = LinkFinder::new();
 
         finder.links(&self.body).for_each(|l| {
             // TODO(otoayana): trim URI prefix
-            let start_tag = format!("<a href=\"{}\">", l.as_str());
+            let left = &body[..(l.start() as isize + offset) as usize];
+            let right = &body[(l.end() as isize + offset) as usize..];
 
-            body.insert_str(l.start() + offset, &start_tag);
-            offset += start_tag.len();
-            body.insert_str(l.end() + offset, "</a>");
-            offset += 4;
+            let link = format!(
+                "<a href=\"{}\">{}</a>",
+                l.as_str(),
+                l.as_str()
+                    .trim_start_matches("http://")
+                    .trim_start_matches("https://")
+            );
+
+            offset += link.clone().len() as isize - l.as_str().len() as isize;
+
+            body = format!("{}{}{}", left, link, right);
         });
 
         let template = FormattedSubpost {
