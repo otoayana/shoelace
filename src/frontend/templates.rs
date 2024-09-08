@@ -2,6 +2,7 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 use askama::Template;
 use chrono::DateTime;
+use linkify::LinkFinder;
 use millisecond::Millisecond;
 use numfmt::{Formatter, Precision, Scales};
 use spools::{Media, MediaKind, Post, Subpost, User};
@@ -41,7 +42,6 @@ trait MediaRender {
 impl<'a> MediaRender for Media {
     fn render(&self, preview: bool, index: usize, length: usize) -> Result<String, Error> {
         let closure: MediaClosure;
-        dbg!(index, length - 1);
 
         if index % 2 == 0 && index != length - 1 {
             closure = MediaClosure::Start
@@ -73,11 +73,9 @@ impl<'a> MediaRender for Media {
 struct FormattedSubpost<'a> {
     input: Subpost,
     code: Option<&'a str>,
+    body: &'a str,
     date: &'a str,
-    // The compiler doesn't recognize Askama will use these
-    #[allow(dead_code)]
     likes: &'a str,
-    #[allow(dead_code)]
     media: Vec<String>,
 }
 
@@ -119,12 +117,26 @@ impl SubpostRender for Subpost {
             })
             .collect::<Result<Vec<String>, Error>>();
 
-        // TODO(otoayana): find and htmlify links or mentions
+        // TODO(otoayana): find and link mentions
+        let mut body = self.body.clone();
+        let mut offset: usize = 0;
+        let finder = LinkFinder::new();
+
+        finder.links(&self.body).for_each(|l| {
+            // TODO(otoayana): trim URI prefix
+            let start_tag = format!("<a href=\"{}\">", l.as_str());
+
+            body.insert_str(l.start() + offset, &start_tag);
+            offset += start_tag.len();
+            body.insert_str(l.end() + offset, "</a>");
+            offset += 4;
+        });
 
         let template = FormattedSubpost {
             input: self.clone(),
             code,
             date: date.as_str(),
+            body: &body,
             likes: &likes,
             media: media?,
         };

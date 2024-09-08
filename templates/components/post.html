@@ -25,7 +25,7 @@
     {% endmatch %}
 		</p>
 	</div>
-	<p class="post-body">{{input.body}}</p>
+	<p class="post-body">{{ body|safe }}</p>
 	{%- if media.len() > 0 -%}
 		<div class="post-media">
 			{% for object in media %}
@@ -35,7 +35,7 @@
 	{%- endif -%}
 	<div class="post-footer">
 		<img class="post-heart" src="/static/img/heart.svg" title="Likes" alt="Likes:">
-		<p class="post-like-count post-faint">{{ input.likes }}</p>
+		<p class="post-like-count post-faint">{{ likes }}</p>
 	</div>
 </div>
 {% match code %}
