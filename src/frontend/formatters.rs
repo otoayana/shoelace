@@ -4,33 +4,30 @@ use regex::Regex;
 
 use crate::{frontend::templates::Base, Error};
 
-pub(super) fn link<'a>(link: &'a str) -> String {
+pub(super) fn link(link: &str) -> String {
     format!(
         "<a href=\"{}\">{}</a>",
         link,
         link.trim_start_matches("http://")
             .trim_start_matches("https://")
             .trim_end_matches('/')
-            .to_string()
     )
 }
 
 pub(super) fn number(value: u64) -> String {
-    let format: String;
-
-    if value >= 10 {
+    let format: String = if value >= 10 {
         let mut formatter = Formatter::new()
             .scales(Scales::short())
             .precision(Precision::Significance(2));
-        format = formatter.fmt2(value).to_owned()
+        formatter.fmt2(value).to_owned()
     } else {
-        format = format!("{}", value)
+        format!("{}", value)
     }
 
     format.to_owned()
 }
 
-pub(super) fn body<'a>(body: &'a str, base: &Base) -> Result<String, Error> {
+pub(super) fn body(body: &str, base: &Base) -> Result<String, Error> {
     let mut inner_body = body.to_string();
     let mut offset: isize = 0;
     let finder = LinkFinder::new();

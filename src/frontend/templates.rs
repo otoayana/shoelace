@@ -107,7 +107,7 @@ impl SubpostRender for Subpost {
             })
             .collect::<Result<Vec<String>, Error>>();
 
-        let body = body(&self.body, &base)?;
+        let body = body(&self.body, base)?;
 
         let template = FormattedSubpost {
             input: self.clone(),
