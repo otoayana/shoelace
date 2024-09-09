@@ -60,7 +60,7 @@
 	{%- if output.posts.len() > 0 -%}
 		{%- for post in output.posts -%}
 			<hr>
-			{{ post.render(true).unwrap()|safe }}
+			{{ post.render(true, base.clone()).unwrap()|safe }}
 		{%- endfor -%}
 	{%- endif -%}
 

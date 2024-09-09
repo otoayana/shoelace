@@ -5,6 +5,7 @@ use chrono::DateTime;
 use linkify::LinkFinder;
 use millisecond::Millisecond;
 use numfmt::{Formatter, Precision, Scales};
+use regex::Regex;
 use spools::{Media, MediaKind, Post, Subpost, User};
 
 use crate::REVISION;
@@ -80,11 +81,11 @@ struct FormattedSubpost<'a> {
 }
 
 trait SubpostRender {
-    fn render(&self, preview: bool) -> Result<String, Error>;
+    fn render(&self, preview: bool, base: Base) -> Result<String, Error>;
 }
 
 impl SubpostRender for Subpost {
-    fn render(&self, preview: bool) -> Result<String, Error> {
+    fn render(&self, preview: bool, base: Base) -> Result<String, Error> {
         /*
         Subposts are recognized passively, by detecting the prescence
         of a code ID, and matching an Option value within the template.
@@ -117,13 +118,12 @@ impl SubpostRender for Subpost {
             })
             .collect::<Result<Vec<String>, Error>>();
 
-        // TODO(otoayana): find and link mentions
         let mut body = self.body.clone();
         let mut offset: isize = 0;
         let finder = LinkFinder::new();
 
+        // TODO(otoayana): Split this off, in order to escape bios
         finder.links(&self.body).for_each(|l| {
-            // TODO(otoayana): trim URI prefix
             let left = &body[..(l.start() as isize + offset) as usize];
             let right = &body[(l.end() as isize + offset) as usize..];
 
@@ -140,6 +140,24 @@ impl SubpostRender for Subpost {
             body = format!("{}{}{}", left, link, right);
         });
 
+        offset = 0;
+
+        let at_pat = Regex::new(r"(@[^,?!+ _(){}]*)")?;
+        at_pat.captures_iter(body.clone().as_str()).for_each(|c| {
+            c.iter().skip(1).for_each(|m| {
+                if let Some(matched) = m {
+                    let left = &body[..(matched.start() as isize + offset) as usize];
+                    let right = &body[(matched.end() as isize + offset) as usize..];
+                    let text = matched.as_str();
+
+                    let link = format!("<a href=\"{}/{}\">{}</a>", base.base_url, text, text);
+                    offset += link.clone().len() as isize - text.len() as isize;
+
+                    body = format!("{}{}{}", left, link, right);
+                }
+            });
+        });
+
         let template = FormattedSubpost {
             input: self.clone(),
             code,
@@ -153,11 +171,11 @@ impl SubpostRender for Subpost {
 }
 
 trait PostRender {
-    fn render(&self) -> Result<String, Error>;
+    fn render(&self, base: Base) -> Result<String, Error>;
 }
 
 impl PostRender for Post {
-    fn render(&self) -> Result<String, Error> {
+    fn render(&self, base: Base) -> Result<String, Error> {
         // Rendering already handled by Subpost
         let subpost = Subpost {
             code: String::new(),
@@ -168,7 +186,7 @@ impl PostRender for Post {
             likes: self.likes,
         };
 
-        subpost.render(false)
+        subpost.render(false, base)
     }
 }
 

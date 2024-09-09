@@ -30,6 +30,8 @@ pub(crate) enum Error {
     Logger(#[from] SetLoggerError),
     #[error("config error: {0}")]
     Config(#[from] ConfigError),
+    #[error("pattern error: {0}")]
+    Pattern(#[from] regex::Error),
     #[error("not found")]
     NotFound,
 }
