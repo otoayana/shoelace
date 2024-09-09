@@ -1,3 +1,4 @@
+mod formatters;
 pub mod routes;
 mod templates;
 

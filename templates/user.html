@@ -40,17 +40,17 @@
 			</div>
 		
 			{# Display user's details, including username and follower count #}
-			<p class="user-details">@{{input}}<span class="base-inline-separator"> • </span>{{ self::common_fmt(output.followers.clone()) }} followers</h4>
+			<p class="user-details">@{{input}}<span class="base-inline-separator"> • </span>{{ self::number(output.followers.clone()) }} followers</h4>
 			
 			{# Add user's bio, if filled #}
 			{%- if output.bio.len() > 0 -%}
-				<p class="user-bio">{{ self::body_fmt(output.bio, base)?|safe }}</p>
+				<p class="user-bio">{{ self::body(output.bio, base)?|safe }}</p>
 			{%- endif -%}
 		
 			{# Add user's links #}
 			{%- for link in output.links -%}
 				<div class="user-links">
-					{{ Self::link_format(link.clone())|safe }}
+					{{ self::link(link)|safe }}
 				</div>
 			{%- endfor -%}
 		</div>

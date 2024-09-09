@@ -2,74 +2,12 @@ use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 use askama::Template;
 use chrono::DateTime;
-use linkify::LinkFinder;
 use millisecond::Millisecond;
-use numfmt::{Formatter, Precision, Scales};
-use regex::Regex;
 use spools::{Media, MediaKind, Post, Subpost, User};
 
 use crate::{config::Settings, Error, REVISION};
 
-fn common_fmt(value: u64) -> String {
-    let format: String;
-
-    if value >= 10 {
-        let mut formatter = Formatter::new()
-            .scales(Scales::short())
-            .precision(Precision::Significance(2));
-        format = formatter.fmt2(value).to_owned()
-    } else {
-        format = format!("{}", value)
-    }
-
-    format.to_owned()
-}
-
-fn body_fmt<'a>(body: &'a str, base: &Base) -> Result<String, Error> {
-    let mut inner_body = body.to_string();
-    let mut offset: isize = 0;
-    let finder = LinkFinder::new();
-
-    // TODO(otoayana): Split this off, in order to escape bios
-    finder.links(inner_body.clone().as_str()).for_each(|l| {
-        let left = &inner_body[..(l.start() as isize + offset) as usize];
-        let right = &inner_body[(l.end() as isize + offset) as usize..];
-
-        let link = format!(
-            "<a href=\"{}\">{}</a>",
-            l.as_str(),
-            l.as_str()
-                .trim_start_matches("http://")
-                .trim_start_matches("https://")
-        );
-
-        offset += link.clone().len() as isize - l.as_str().len() as isize;
-
-        inner_body = format!("{}{}{}", left, link, right);
-    });
-
-    offset = 0;
-
-    let at_pat = Regex::new(r"(@[^,?!+ _(){}]*)")?;
-    at_pat
-        .captures_iter(inner_body.clone().as_str())
-        .for_each(|c| {
-            c.iter().skip(1).for_each(|m| {
-                if let Some(matched) = m {
-                    let left = &inner_body[..(matched.start() as isize + offset) as usize];
-                    let right = &inner_body[(matched.end() as isize + offset) as usize..];
-                    let text = matched.as_str();
-
-                    let link = format!("<a href=\"{}/{}\">{}</a>", base.base_url, text, text);
-                    offset += link.clone().len() as isize - text.len() as isize;
-
-                    inner_body = format!("{}{}{}", left, link, right);
-                }
-            });
-        });
-
-    Ok(inner_body)
-}
+use super::formatters::{body, link, number};
 
 #[derive(Debug, PartialEq)]
 enum MediaClosure {
@@ -153,7 +91,7 @@ impl SubpostRender for Subpost {
             String::new()
         };
 
-        let likes = common_fmt(self.likes);
+        let likes = number(self.likes);
 
         let media_length = self.media.len();
         let mut media_cursor = 0;
@@ -169,7 +107,7 @@ impl SubpostRender for Subpost {
             })
             .collect::<Result<Vec<String>, Error>>();
 
-        let body = body_fmt(&self.body, &base)?;
+        let body = body(&self.body, &base)?;
 
         let template = FormattedSubpost {
             input: self.clone(),
@@ -208,7 +146,7 @@ impl PostRender for Post {
 pub struct Base {
     rev: &'static str,
     rss: bool,
-    base_url: String,
+    pub(super) base_url: String,
     time: Option<u128>,
 }
 
@@ -277,28 +215,10 @@ pub struct HomeView {
     pub base: Base,
 }
 
-trait UserUtils {
-    fn link_format(link: String) -> String;
-}
-
 #[derive(Debug, Template)]
 #[template(path = "user.html")]
 pub struct UserView<'a> {
     pub base: Base,
     pub input: &'a str,
     pub output: User,
-}
-
-impl<'a> UserUtils for UserView<'a> {
-    fn link_format(link: String) -> String {
-        format!(
-            "<a href=\"{}\">{}</a>",
-            &link,
-            &link
-                .trim_start_matches("http://")
-                .trim_start_matches("https://")
-                .trim_end_matches('/')
-                .to_string()
-        )
-    }
 }
