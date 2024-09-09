@@ -17,7 +17,7 @@ enum MediaClosure {
 }
 
 #[derive(Debug, Template)]
-#[template(path = "components/media.html")]
+#[template(path = "components/media.j2")]
 struct FormattedMedia<'a> {
     input: Media,
     alt: &'a str,
@@ -59,7 +59,7 @@ impl<'a> MediaRender for Media {
 }
 
 #[derive(Debug, Template)]
-#[template(path = "components/post.html")]
+#[template(path = "components/post.j2")]
 struct FormattedSubpost<'a> {
     input: Subpost,
     code: Option<&'a str>,
@@ -223,13 +223,13 @@ impl Base {
 }
 
 #[derive(Debug, Template)]
-#[template(path = "home.html")]
+#[template(path = "home.j2")]
 pub struct HomeView {
     pub base: Base,
 }
 
 #[derive(Debug, Template)]
-#[template(path = "user.html")]
+#[template(path = "user.j2")]
 pub struct UserView<'a> {
     pub base: Base,
     pub input: &'a str,
@@ -237,7 +237,7 @@ pub struct UserView<'a> {
 }
 
 #[derive(Debug, Template)]
-#[template(path = "post.html")]
+#[template(path = "post.j2")]
 pub struct PostView<'a> {
     pub base: Base,
     pub input: &'a str,
