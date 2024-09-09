@@ -35,8 +35,6 @@ pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
     pub(crate) log_cdn: bool,
     pub(crate) base_url: String,
-    pub(crate) rev: String,
-    pub(crate) rss: bool,
 }
 
 lazy_static! {
@@ -108,8 +106,6 @@ async fn main() -> std::io::Result<()> {
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
         log_cdn: config.logging.log_cdn,
         base_url: config.server.base_url.clone(),
-        rev: REVISION.to_string(),
-        rss: config.endpoint.rss,
     });
 
     info!("Base URL is set to {}", config.server.base_url);

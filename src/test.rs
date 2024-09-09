@@ -8,8 +8,6 @@ const TEST_APP_DATA: ShoelaceData = ShoelaceData {
     store: crate::proxy::Keystore::None,
     log_cdn: false,
     base_url: String::new(),
-    rev: String::new(),
-    rss: false,
 };
 
 #[actix_web::test]
@@ -88,8 +86,6 @@ async fn proxy() {
                 store: crate::proxy::Keystore::Internal(Mutex::new(HashMap::new())),
                 log_cdn: false,
                 base_url: "".to_string(),
-                rev: String::new(),
-                rss: false,
             })),
     )
     .await;

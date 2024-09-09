@@ -1,5 +1,5 @@
 use crate::{
-    frontend::templates::{Base, HomeView, UserView},
+    frontend::templates::{Base, HomeView, PostView, UserView},
     req, Error, ShoelaceData,
 };
 use actix_web::{
@@ -11,7 +11,6 @@ use actix_web::{
 use askama::Template;
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
-use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 #[derive(Debug, Deserialize, Serialize)]
 enum ResponseTypes {
@@ -36,14 +35,6 @@ struct Find {
     value: String,
 }
 
-// Logs current time, in order to determine request times
-fn time_log() -> Result<u128, SystemTimeError> {
-    let start = SystemTime::now();
-    let since_the_epoch = start.duration_since(UNIX_EPOCH)?.as_millis();
-
-    Ok(since_the_epoch)
-}
-
 // Landing page
 #[get("/")]
 async fn home() -> Result<HttpResponse, Error> {
@@ -59,10 +50,9 @@ async fn home() -> Result<HttpResponse, Error> {
 #[get("/@{user}")]
 async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     let mut base = Base::new()?;
+
     base.timer(true)?;
-
     let req = req::user(user.clone(), store.to_owned()).await?;
-
     base.timer(false)?;
 
     let template = UserView {
@@ -80,33 +70,22 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
 // Post frontend
 #[get("/t/{post}")]
 async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-    // Get current timestamp before request
-    let start_time = time_log()?;
+    let mut base = Base::new()?;
 
-    // Process post request
+    base.timer(true)?;
     let req = req::post(post.clone(), store.to_owned()).await?;
+    base.timer(false)?;
 
-    // Get request time
-    let end_time = time_log()?;
-    let total_time = end_time - start_time;
-
-    // Define response values
-    let _data = Response {
-        request: post.into_inner(),
-        response: ResponseTypes::Post(req),
-        time: total_time,
-        rev: store.rev.clone(),
-        base_url: store.base_url.clone(),
-        rss: store.rss,
-    };
-
-    // Render template from those values
-    //let resp = crate::TEMPLATES.render("post.html", &Context::from_serialize(data)?)?;
-    let resp = String::new();
+    let template = PostView {
+        base,
+        input: &post.into_inner(),
+        output: req,
+    }
+    .render()?;
 
     Ok(HttpResponse::Ok()
         .insert_header(ContentType::html())
-        .body(resp))
+        .body(template))
 }
 
 // User finder endpoint

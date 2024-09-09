@@ -127,6 +127,18 @@ trait PostRender {
 
 impl PostRender for Post {
     fn render(&self, base: &Base) -> Result<String, Error> {
+        let parents = self
+            .parents
+            .iter()
+            .map(|p| p.render(true, base))
+            .collect::<Result<String, Error>>()?;
+
+        let replies = self
+            .replies
+            .iter()
+            .map(|p| p.render(true, base))
+            .collect::<Result<String, Error>>()?;
+
         // Rendering already handled by Subpost
         let subpost = Subpost {
             code: String::new(),
@@ -135,9 +147,10 @@ impl PostRender for Post {
             body: self.body.clone(),
             media: self.media.clone(),
             likes: self.likes,
-        };
+        }
+        .render(false, base)?;
 
-        subpost.render(false, base)
+        Ok(format!("{}{}{}", parents, subpost, replies))
     }
 }
 
@@ -221,4 +234,12 @@ pub struct UserView<'a> {
     pub base: Base,
     pub input: &'a str,
     pub output: User,
+}
+
+#[derive(Debug, Template)]
+#[template(path = "post.html")]
+pub struct PostView<'a> {
+    pub base: Base,
+    pub input: &'a str,
+    pub output: Post,
 }

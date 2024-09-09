@@ -59,7 +59,6 @@
 	{# Add user's posts, if there's any #}
 	{%- if output.posts.len() > 0 -%}
 		{%- for post in output.posts -%}
-			<hr>
 			{{ post.render(true, base).unwrap()|safe }}
 		{%- endfor -%}
 	{%- endif -%}

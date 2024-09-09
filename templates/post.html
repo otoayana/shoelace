@@ -1,44 +1,29 @@
 {% extends "common/base.html" %}
-{% import "common/macro.html" as macro %}
 
-{% block title %}Post by @{{response.Post.author.username}}{% endblock title %}
+{% block title %}Post by @{{output.author.username}}{% endblock title %}
 
 {% block head %}
   <link rel="stylesheet" href="/static/css/post.css">
-  {# Add subpost stylesheet if there's any post relations #}
-  {%- if response.Post.parents or response.Post.replies -%}
+  {%- if output.parents.len() > 0 || output.replies.len() > 0 -%}
     <link rel="stylesheet" href="/static/css/subpost.css">
   {%- endif -%}
   {# Open Graph properties #}
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Post by @{{response.Post.author.username}}">
-  <meta property="og:description" content="{{response.Post.body}}">
-  {# Include media in properties if applicable #}
+  <meta property="og:title" content="Post by @{{output.author.username}}">
+  <meta property="og:description" content="{{output.body}}">
+    {# TODO(otoayana): update
   {%- if response.Post.media | length > 0 -%}
-    {%- set object = response.Post.media | first -%}
     {%- if object.kind == "Image" -%}
-      <meta property="og:image" content="{{object.content | safe }}">
-      <meta property="og:image:alt" content="{{object.alt}}">
+      <meta property="og:image" content="{{output.content | safe }}">
+      <meta property="og:image:alt" content="{{output.alt}}">
     {%- else -%}
-      <meta property="og:video" content="{{object.content | safe }}">
+      <meta property="og:video" content="{{output.content | safe }}">
     {%- endif -%}
   {%- endif -%}
-  <meta property="og:url" content="{{base_url | safe}}/t/{{request}}">
+    #}
+  <meta property="og:url" content="{{ base.base_url|safe }}/t/{{ input }}">
 {% endblock head %}
 
 {% block body %}
-  {# Adds parents #}
-  {%- for post in response.Post.parents -%}
-    {{ macro::subpost(post=post) }}
-    <hr>
-  {%- endfor -%}
-
-  {# Renders post #}
-  {{ macro::post(post=response.Post, clickable=false) }}
-
-  {# Adds replies #}
-  {%- for post in response.Post.replies -%}
-    <hr>
-    {{ macro::subpost(post=post) }}
-  {%- endfor -%}
+  {{ output.render(base)?|safe }}
 {% endblock body %}

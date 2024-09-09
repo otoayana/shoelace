@@ -22,7 +22,7 @@ pub(super) fn number(value: u64) -> String {
         formatter.fmt2(value).to_owned()
     } else {
         format!("{}", value)
-    }
+    };
 
     format.to_owned()
 }
