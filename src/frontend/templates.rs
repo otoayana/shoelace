@@ -8,14 +8,19 @@ use numfmt::{Formatter, Precision, Scales};
 use regex::Regex;
 use spools::{Media, MediaKind, Post, Subpost, User};
 
-use crate::REVISION;
-use crate::{config::Settings, Error};
+use crate::{config::Settings, Error, REVISION};
 
 fn common_fmt(value: u64) -> String {
-    let mut formatter = Formatter::new()
-        .scales(Scales::short())
-        .precision(Precision::Significance(2));
-    let format = formatter.fmt2(value);
+    let format: String;
+
+    if value >= 10 {
+        let mut formatter = Formatter::new()
+            .scales(Scales::short())
+            .precision(Precision::Significance(2));
+        format = formatter.fmt2(value).to_owned()
+    } else {
+        format = format!("{}", value)
+    }
 
     format.to_owned()
 }
