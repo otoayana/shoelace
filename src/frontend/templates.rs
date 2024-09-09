@@ -20,6 +20,52 @@ fn common_fmt(value: u64) -> String {
     format.to_owned()
 }
 
+fn body_fmt<'a>(body: &'a str, base: &Base) -> Result<String, Error> {
+    let mut inner_body = body.to_string();
+    let mut offset: isize = 0;
+    let finder = LinkFinder::new();
+
+    // TODO(otoayana): Split this off, in order to escape bios
+    finder.links(inner_body.clone().as_str()).for_each(|l| {
+        let left = &inner_body[..(l.start() as isize + offset) as usize];
+        let right = &inner_body[(l.end() as isize + offset) as usize..];
+
+        let link = format!(
+            "<a href=\"{}\">{}</a>",
+            l.as_str(),
+            l.as_str()
+                .trim_start_matches("http://")
+                .trim_start_matches("https://")
+        );
+
+        offset += link.clone().len() as isize - l.as_str().len() as isize;
+
+        inner_body = format!("{}{}{}", left, link, right);
+    });
+
+    offset = 0;
+
+    let at_pat = Regex::new(r"(@[^,?!+ _(){}]*)")?;
+    at_pat
+        .captures_iter(inner_body.clone().as_str())
+        .for_each(|c| {
+            c.iter().skip(1).for_each(|m| {
+                if let Some(matched) = m {
+                    let left = &inner_body[..(matched.start() as isize + offset) as usize];
+                    let right = &inner_body[(matched.end() as isize + offset) as usize..];
+                    let text = matched.as_str();
+
+                    let link = format!("<a href=\"{}/{}\">{}</a>", base.base_url, text, text);
+                    offset += link.clone().len() as isize - text.len() as isize;
+
+                    inner_body = format!("{}{}{}", left, link, right);
+                }
+            });
+        });
+
+    Ok(inner_body)
+}
+
 #[derive(Debug, PartialEq)]
 enum MediaClosure {
     Start,
@@ -81,11 +127,11 @@ struct FormattedSubpost<'a> {
 }
 
 trait SubpostRender {
-    fn render(&self, preview: bool, base: Base) -> Result<String, Error>;
+    fn render(&self, preview: bool, base: &Base) -> Result<String, Error>;
 }
 
 impl SubpostRender for Subpost {
-    fn render(&self, preview: bool, base: Base) -> Result<String, Error> {
+    fn render(&self, preview: bool, base: &Base) -> Result<String, Error> {
         /*
         Subposts are recognized passively, by detecting the prescence
         of a code ID, and matching an Option value within the template.
@@ -118,45 +164,7 @@ impl SubpostRender for Subpost {
             })
             .collect::<Result<Vec<String>, Error>>();
 
-        let mut body = self.body.clone();
-        let mut offset: isize = 0;
-        let finder = LinkFinder::new();
-
-        // TODO(otoayana): Split this off, in order to escape bios
-        finder.links(&self.body).for_each(|l| {
-            let left = &body[..(l.start() as isize + offset) as usize];
-            let right = &body[(l.end() as isize + offset) as usize..];
-
-            let link = format!(
-                "<a href=\"{}\">{}</a>",
-                l.as_str(),
-                l.as_str()
-                    .trim_start_matches("http://")
-                    .trim_start_matches("https://")
-            );
-
-            offset += link.clone().len() as isize - l.as_str().len() as isize;
-
-            body = format!("{}{}{}", left, link, right);
-        });
-
-        offset = 0;
-
-        let at_pat = Regex::new(r"(@[^,?!+ _(){}]*)")?;
-        at_pat.captures_iter(body.clone().as_str()).for_each(|c| {
-            c.iter().skip(1).for_each(|m| {
-                if let Some(matched) = m {
-                    let left = &body[..(matched.start() as isize + offset) as usize];
-                    let right = &body[(matched.end() as isize + offset) as usize..];
-                    let text = matched.as_str();
-
-                    let link = format!("<a href=\"{}/{}\">{}</a>", base.base_url, text, text);
-                    offset += link.clone().len() as isize - text.len() as isize;
-
-                    body = format!("{}{}{}", left, link, right);
-                }
-            });
-        });
+        let body = body_fmt(&self.body, &base)?;
 
         let template = FormattedSubpost {
             input: self.clone(),
@@ -171,11 +179,11 @@ impl SubpostRender for Subpost {
 }
 
 trait PostRender {
-    fn render(&self, base: Base) -> Result<String, Error>;
+    fn render(&self, base: &Base) -> Result<String, Error>;
 }
 
 impl PostRender for Post {
-    fn render(&self, base: Base) -> Result<String, Error> {
+    fn render(&self, base: &Base) -> Result<String, Error> {
         // Rendering already handled by Subpost
         let subpost = Subpost {
             code: String::new(),

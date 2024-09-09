@@ -44,7 +44,7 @@
 			
 			{# Add user's bio, if filled #}
 			{%- if output.bio.len() > 0 -%}
-				<p class="user-bio">{{ output.bio|safe }}</p>
+				<p class="user-bio">{{ self::body_fmt(output.bio, base)?|safe }}</p>
 			{%- endif -%}
 		
 			{# Add user's links #}
@@ -60,7 +60,7 @@
 	{%- if output.posts.len() > 0 -%}
 		{%- for post in output.posts -%}
 			<hr>
-			{{ post.render(true, base.clone()).unwrap()|safe }}
+			{{ post.render(true, base).unwrap()|safe }}
 		{%- endfor -%}
 	{%- endif -%}
 
