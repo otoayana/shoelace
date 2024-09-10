@@ -243,3 +243,11 @@ pub struct PostView<'a> {
     pub input: &'a str,
     pub output: Post,
 }
+
+#[derive(Debug, Template)]
+#[template(path = "common/error.j2")]
+pub struct ErrorView<'a> {
+    pub base: Base,
+    pub status: &'a str,
+    pub error: &'a str,
+}

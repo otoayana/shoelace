@@ -5,15 +5,12 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpResponse, ResponseError,
 };
+use askama::Template;
 use config::ConfigError;
-
-use serde::{Deserialize, Serialize};
 use spools::SpoolsError;
-
 use thiserror::Error;
 use tracing_log::log::SetLoggerError;
 
-// Defines frontend errors
 #[derive(Error, Debug)]
 pub(crate) enum Error {
     #[error("{0}")]
@@ -36,16 +33,6 @@ pub(crate) enum Error {
     NotFound,
 }
 
-// Constructs the contents for an error page
-#[derive(Debug, Deserialize, Serialize)]
-struct ErrorResponse {
-    base_url: String,
-    status_code: String,
-    error: String,
-    rev: String,
-}
-
-// Plaintext error method
 impl Error {
     pub(crate) fn into_plaintext(self) -> actix_web::Error {
         match self {
@@ -61,52 +48,35 @@ impl Error {
     }
 }
 
-// Fancy error trait
 impl error::ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
-        // Defines return values
+        let base = crate::frontend::Base::new().unwrap();
         let body: String;
-        let status_code: StatusCode;
-
-        // Renders error template
-        /*let template = crate::TEMPLATES
-        .render(
-            "common/error.html",
-            &Context::from_serialize(ErrorResponse {
-                base_url: String::new(),
-                status_code: self.status_code().as_u16().to_string(),
-                error: self.to_string(),
-                rev: git_version!(
-                    args = ["--always", "--dirty=-dirty"],
-                    fallback = format!("v{}", env!("CARGO_PKG_VERSION"))
-                )
-                .to_string(), // Needs to be redefined, since in this scope we can't read application data
-            })
-            .map_err(Error::LegacyTemplate)
-            .unwrap(),
-        )
-        .map_err(Error::LegacyTemplate);*/
-        let template: Result<String, Error> = Ok(self.to_string());
+        let status: StatusCode;
+        let template = crate::frontend::ErrorView {
+            base,
+            status: self.status_code().as_str(),
+            error: self.to_string().as_str(),
+        }
+        .render();
 
         // Fallback in case the template fails to render.
         match template {
             Ok(template_body) => {
                 body = template_body;
-                status_code = self.status_code()
+                status = self.status_code()
             }
             Err(error) => {
                 body = format!("{}\n{}", error, self);
-                status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                status = StatusCode::INTERNAL_SERVER_ERROR;
             }
         }
 
-        // Send response
-        HttpResponse::build(status_code)
+        HttpResponse::build(status)
             .insert_header(ContentType::html())
             .body(body)
     }
 
-    // Map error codes
     fn status_code(&self) -> StatusCode {
         match self {
             Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => StatusCode::NOT_FOUND,
