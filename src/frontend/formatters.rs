@@ -19,7 +19,13 @@ pub(super) fn number(value: u64) -> String {
         let mut formatter = Formatter::new()
             .scales(Scales::short())
             .precision(Precision::Significance(2));
-        formatter.fmt2(value).to_owned()
+
+        formatter
+            .fmt2(value)
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+            .to_lowercase()
     } else {
         format!("{}", value)
     };
