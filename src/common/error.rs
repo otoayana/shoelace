@@ -17,8 +17,6 @@ pub(crate) enum Error {
     Threads(#[from] SpoolsError),
     #[error("proxy failed: {0}")]
     Proxy(#[from] crate::proxy::Error),
-    #[error("(legacy) template failed to render: {0}")]
-    LegacyTemplate(#[from] tera::Error),
     #[error("template failed to render: {0}")]
     Template(#[from] askama::Error),
     #[error("couldn't fetch time: {0}")]
