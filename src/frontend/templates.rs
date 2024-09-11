@@ -5,7 +5,7 @@ use chrono::DateTime;
 use millisecond::Millisecond;
 use spools::{Media, MediaKind, Post, Subpost, User};
 
-use crate::{config::Settings, Error, REVISION};
+use crate::{common::error::TimerError, config::Settings, Error, REVISION};
 
 use super::formatters::{body, link, number};
 
@@ -184,6 +184,7 @@ impl Base {
         Ok(since_the_epoch)
     }
 
+    /// Formats and displays timer value
     fn display_timer(&self) -> Result<String, Error> {
         if let Some(time) = self.time {
             let millis = Millisecond::from_millis(time);
@@ -196,8 +197,7 @@ impl Base {
                 )
             })
         } else {
-            // TODO(otoayana): make this error more idiomatic
-            Err(Error::NotFound)
+            Err(Error::TimerError(TimerError::NotStarted))
         }
     }
 
@@ -209,13 +209,12 @@ impl Base {
             self.time = Some(now);
         } else if let Some(time) = self.time {
             if time > now {
-                // TODO(otoayana): make this error more idiomatic
-                return Err(Error::NotFound);
+                return Err(Error::TimerError(TimerError::ClockSkew));
             }
 
             self.time = Some(now - time);
         } else {
-            return Err(Error::NotFound);
+            return Err(Error::TimerError(TimerError::NotStarted));
         }
 
         Ok(())

@@ -1,4 +1,4 @@
-use std::time::SystemTimeError;
+use std::{fmt::Display, time::SystemTimeError};
 
 use actix_web::{
     error,
@@ -12,6 +12,23 @@ use thiserror::Error;
 use tracing_log::log::SetLoggerError;
 
 #[derive(Error, Debug)]
+pub(crate) enum TimerError {
+    ClockSkew,
+    NotStarted,
+}
+
+impl Display for TimerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let message = match self {
+            Self::ClockSkew => "clock skew",
+            Self::NotStarted => "timer not started",
+        };
+
+        writeln!(f, "{}", message)
+    }
+}
+
+#[derive(Error, Debug)]
 pub(crate) enum Error {
     #[error("{0}")]
     Threads(#[from] SpoolsError),
@@ -21,6 +38,8 @@ pub(crate) enum Error {
     Template(#[from] askama::Error),
     #[error("couldn't fetch time: {0}")]
     Time(#[from] SystemTimeError),
+    #[error("timer error: {0}")]
+    TimerError(#[from] TimerError),
     #[error("couldn't start logger: {0}")]
     Logger(#[from] SetLoggerError),
     #[error("config error: {0}")]
