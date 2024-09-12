@@ -1,6 +1,3 @@
- crate lazy_static;
-
-// Defines crate modules and re-exports
 mod api;
 mod common;
 mod frontend;
@@ -19,6 +16,7 @@ use crate::common::config::{Settings, Tls};
 use actix_web::{dev::ServiceResponse, middleware::Logger, web, App, HttpServer};
 use actix_web_static_files::ResourceFiles;
 use git_version::git_version;
+use lazy_static::lazy_static;
 use proxy::Keystore;
 use std::{
     fs::File,
@@ -29,7 +27,6 @@ use std::{
 use tracing::{info, instrument, warn};
 use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
 
-// Define application data
 #[derive(Debug)]
 pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
