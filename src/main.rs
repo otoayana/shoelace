@@ -4,6 +4,8 @@ mod frontend;
 mod proxy;
 mod rss;
 
+use actix_web::http::StatusCode;
+use axum_server::tls_rustls::RustlsConfig;
 pub(crate) use common::config;
 pub(crate) use common::error::Error;
 pub(crate) use common::req;
@@ -13,16 +15,15 @@ use tracing_log::LogTracer;
 mod test;
 
 use crate::common::config::{Settings, Tls};
-use actix_web::{dev::ServiceResponse, middleware::Logger, web, App, HttpServer};
-use actix_web_static_files::ResourceFiles;
+use axum::Router;
 use git_version::git_version;
 use lazy_static::lazy_static;
 use proxy::Keystore;
 use std::{
     fs::File,
-    io::{self, BufReader, ErrorKind},
+    io::{self, ErrorKind},
     process::id,
-    sync::Mutex,
+    sync::{Arc, Mutex},
 };
 use tracing::{info, instrument, warn};
 use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
@@ -44,25 +45,22 @@ lazy_static! {
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-fn log_err(res: &ServiceResponse) -> String {
-    let status = res.status().as_u16();
-
-    if status == 404 {
-        "??".to_string()
-    } else if status >= 400 {
-        "!!".to_string()
+fn _log_err<'a>(status: StatusCode) -> &'a str {
+    if status == StatusCode::NOT_FOUND {
+        "??"
+    } else if status == StatusCode::OK {
+        "<3"
     } else {
-        "<3".to_string()
+        "!!"
     }
 }
 
 // Web server
 #[instrument(name = "shoelace::main")]
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
 
-    // Logger needs to be sanitized, since Actix tends to be a bit invasive with them
     let filter = EnvFilter::builder()
         .from_env()
         .map_err(|err| io::Error::new(ErrorKind::Other, err))?
@@ -97,7 +95,7 @@ async fn main() -> std::io::Result<()> {
         id()
     );
 
-    let data = web::Data::new(ShoelaceData {
+    let data = Arc::new(ShoelaceData {
         store: Keystore::new(config.proxy)
             .await
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
@@ -115,60 +113,64 @@ async fn main() -> std::io::Result<()> {
         warn!("API has been disabled");
     }
 
-    let mut server = HttpServer::new(move || {
-        let mut app = App::new()
-            .wrap(
-                Logger::new(
-                    format!(
-                        "%{{ERROR_STATUS}}xo %s{}%U %Dms",
-                        if config.logging.log_ips {
-                            " %{r}a"
-                        } else {
-                            " "
-                        }
-                    )
-                    .as_str(),
-                )
-                .custom_response_replace("ERROR_STATUS", log_err)
-                .log_target("shoelace::web"),
-            )
-            .app_data(data.clone())
-            .default_service(web::to(move || {
-                common::error::not_found(config.endpoint.frontend)
-            }))
-            .service(web::scope("/proxy").service(proxy::serve));
+    let app = Router::new().with_state(data);
 
-        if config.endpoint.frontend {
-            // Loads static files
-            let generated = generate();
+    // let mut server = HttpServer::new(move || {
+    //     let mut app = App::new()
+    //         .wrap(
+    //             Logger::new(
+    //                 format!(
+    //                     "%{{ERROR_STATUS}}xo %s{}%U %Dms",
+    //                     if config.logging.log_ips {
+    //                         " %{r}a"
+    //                     } else {
+    //                         " "
+    //                     }
+    //                 )
+    //                 .as_str(),
+    //             )
+    //             .custom_response_replace("ERROR_STATUS", log_err)
+    //             .log_target("shoelace::web"),
+    //         )
+    //         .app_data(data.clone())
+    //         .default_service(web::to(move || {
+    //             common::error::not_found(config.endpoint.frontend)
+    //         }))
+    //         .service(web::scope("/proxy").service(proxy::serve));
 
-            // Adds services to app
-            app = app
-                .service(ResourceFiles::new("/static", generated))
-                .service(frontend::routes::user)
-                .service(frontend::routes::post)
-                .service(frontend::routes::home)
-                .service(frontend::routes::find)
-                .service(frontend::routes::redirect);
-        }
+    //     if config.endpoint.frontend {
+    //         // Loads static files
+    //         let generated = generate();
 
-        // API
-        if config.endpoint.api {
-            app = app.service(web::scope("/api").service(api::post).service(api::user));
-        }
+    //         // Adds services to app
+    //         app = app
+    //             .service(ResourceFiles::new("/static", generated))
+    //             .service(frontend::routes::user)
+    //             .service(frontend::routes::post)
+    //             .service(frontend::routes::home)
+    //             .service(frontend::routes::find)
+    //             .service(frontend::routes::redirect);
+    //     }
 
-        // RSS
-        if config.endpoint.rss {
-            app = app.service(web::scope("/rss").service(rss::user))
-        }
+    //     // API
+    //     if config.endpoint.api {
+    //         app = app.service(web::scope("/api").service(api::post).service(api::user));
+    //     }
 
-        // Returns app definition
-        app
-    });
+    //     // RSS
+    //     if config.endpoint.rss {
+    //         app = app.service(web::scope("/rss").service(rss::user))
+    //     }
 
-    // Checks if there's any TLS settings
+    //     // Returns app definition
+    //     app
+    // });
+
     let tls_params = match config.server.tls {
-        Some(opt) => opt,
+        Some(opt) => {
+            info!("TLS has been enabled");
+            opt
+        }
         None => Tls {
             enabled: false,
             cert: String::new(),
@@ -176,44 +178,34 @@ async fn main() -> std::io::Result<()> {
         },
     };
 
-    if tls_params.enabled {
-        let mut certs_file = BufReader::new(File::open(tls_params.cert)?);
-        let mut key_file = BufReader::new(File::open(tls_params.key)?);
-
-        let tls_certs = rustls_pemfile::certs(&mut certs_file).collect::<Result<Vec<_>, _>>()?;
-
-        let tls_key = match rustls_pemfile::pkcs8_private_keys(&mut key_file).next() {
-            Some(key) => key?,
-            None => return Err(io::Error::new(ErrorKind::InvalidInput, "Not a key file")),
-        };
-
-        let tls_config = rustls::ServerConfig::builder()
-            .with_no_client_auth()
-            .with_single_cert(tls_certs, rustls::pki_types::PrivateKeyDer::Pkcs8(tls_key))
-            .map_err(|err| {
-                io::Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Could not configure TLS server: {}", err),
-                )
-            })?;
-
-        server = server.bind_rustls_0_23(
-            (config.server.listen.clone(), config.server.port),
-            tls_config,
-        )?;
-
-        info!("TLS has been enabled");
-    } else {
-        server = server.bind((config.server.listen.clone(), config.server.port))?;
-    }
-
     info!(
         "Accepting connections at {}:{}",
         config.server.listen, config.server.port
     );
 
-    let run = server.run().await;
+    if !tls_params.enabled {
+        axum_server::bind(
+            format!("{}:{}", config.server.listen, config.server.port)
+                .parse()
+                .unwrap(),
+        )
+        .serve(app.into_make_service())
+        .await?
+    } else {
+        let tls_config = RustlsConfig::from_pem_file(tls_params.cert, tls_params.key)
+            .await
+            .unwrap();
+
+        axum_server::bind_rustls(
+            format!("{}:{}", config.server.listen, config.server.port)
+                .parse()
+                .unwrap(),
+            tls_config,
+        )
+        .serve(app.into_make_service())
+        .await?
+    };
 
     info!("🚪 Shoelace exited successfully. See you soon!");
-    run
+    Ok(())
 }
