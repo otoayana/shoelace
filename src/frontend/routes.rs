@@ -9,8 +9,12 @@ use actix_web::{
 };
 use askama_axum::Template;
 use axum::{response::Html, routing::get, Router};
+use include_dir::{include_dir, Dir};
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
+use tower_serve_static::ServeDir;
+
+static ASSETS_DIR: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/static");
 
 #[derive(Debug, Deserialize, Serialize)]
 enum ResponseTypes {
@@ -19,7 +23,8 @@ enum ResponseTypes {
 }
 
 pub(crate) fn attach(app: Router) -> Router {
-    let routed = app.route("/", get(home));
+    let assets = ServeDir::new(&ASSETS_DIR);
+    let routed = app.route("/", get(home)).nest_service("/static", assets);
 
     routed
 }
