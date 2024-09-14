@@ -113,7 +113,11 @@ async fn main() -> std::io::Result<()> {
         warn!("API has been disabled");
     }
 
-    let app = Router::new().with_state(data);
+    let mut app = Router::new().with_state(data);
+
+    if config.endpoint.frontend {
+        app = frontend::routes::attach(app);
+    }
 
     // let mut server = HttpServer::new(move || {
     //     let mut app = App::new()

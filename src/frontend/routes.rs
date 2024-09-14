@@ -3,12 +3,12 @@ use crate::{
     req, Error, ShoelaceData,
 };
 use actix_web::{
-    get,
     http::header::ContentType,
     web::{self, Data, Redirect},
     HttpResponse, Responder,
 };
-use askama::Template;
+use askama_axum::Template;
+use axum::{response::Html, routing::get, Router};
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
 
@@ -18,15 +18,10 @@ enum ResponseTypes {
     User(User),
 }
 
-// For user template
-#[derive(Debug, Deserialize, Serialize)]
-struct Response {
-    request: String,
-    response: ResponseTypes,
-    time: u128,
-    rev: String,
-    base_url: String,
-    rss: bool,
+pub(crate) fn attach(app: Router) -> Router {
+    let routed = app.route("/", get(home));
+
+    routed
 }
 
 // For user find form
@@ -36,19 +31,19 @@ struct Find {
 }
 
 // Landing page
-#[get("/")]
-async fn home() -> Result<HttpResponse, Error> {
+async fn home() -> Result<Html<String>, Error> {
     let base = Base::new()?;
     let template = HomeView { base }.render()?;
 
-    Ok(HttpResponse::Ok()
-        .insert_header(ContentType::html())
-        .body(template))
+    Ok(Html(template))
 }
 
 // User frontend
-#[get("/@{user}")]
-async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+#[actix_web::get("/@{user}")]
+async fn user(
+    user: web::Path<String>,
+    store: Data<ShoelaceData>,
+) -> askama_axum::Result<HttpResponse, Error> {
     let mut base = Base::new()?;
 
     base.timer(true)?;
@@ -68,7 +63,7 @@ async fn user(user: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
 }
 
 // Post frontend
-#[get("/t/{post}")]
+#[actix_web::get("/t/{post}")]
 async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
     let mut base = Base::new()?;
 
@@ -89,7 +84,7 @@ async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<Http
 }
 
 // User finder endpoint
-#[get("/find")]
+#[actix_web::get("/find")]
 async fn find(request: web::Query<Find>) -> impl Responder {
     // Fetches query value
     let values = request.into_inner();
@@ -99,7 +94,7 @@ async fn find(request: web::Query<Find>) -> impl Responder {
 }
 
 // Post redirect endpoint
-#[get("/{_}/post/{path}")]
+#[actix_web::get("/{_}/post/{path}")]
 async fn redirect(request: web::Path<((), String)>) -> impl Responder {
     // Fetches path values
     let values = request.into_inner();
