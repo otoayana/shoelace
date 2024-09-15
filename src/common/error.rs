@@ -1,10 +1,5 @@
 use std::{fmt::Display, time::SystemTimeError};
 
-use actix_web::{
-    error,
-    http::{self, header::ContentType},
-    HttpResponse, ResponseError,
-};
 use askama::Template;
 use axum::{
     http::StatusCode,
@@ -65,6 +60,13 @@ impl Error {
 
         (status, self.to_string()).into_response()
     }
+
+    fn status(&self) -> StatusCode {
+        match self {
+            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
 }
 
 impl IntoResponse for Error {
@@ -78,7 +80,7 @@ impl IntoResponse for Error {
 
         let template = crate::frontend::ErrorView {
             base,
-            status: self.status_code().as_str(),
+            status: self.status().as_str(),
             error: self.to_string().as_str(),
         }
         .render();
@@ -94,54 +96,5 @@ impl IntoResponse for Error {
         }
 
         (status, body).into_response()
-    }
-}
-
-impl error::ResponseError for Error {
-    fn error_response(&self) -> HttpResponse {
-        let base = Base::new().unwrap();
-        let body: String;
-        let status: http::StatusCode;
-        let template = crate::frontend::ErrorView {
-            base,
-            status: self.status_code().as_str(),
-            error: self.to_string().as_str(),
-        }
-        .render();
-
-        // Fallback in case the template fails to render.
-        match template {
-            Ok(template_body) => {
-                body = template_body;
-                status = self.status_code()
-            }
-            Err(error) => {
-                body = format!("{}\n{}", error, self);
-                status = http::StatusCode::INTERNAL_SERVER_ERROR;
-            }
-        }
-
-        HttpResponse::build(status)
-            .insert_header(ContentType::html())
-            .body(body)
-    }
-
-    fn status_code(&self) -> http::StatusCode {
-        match self {
-            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => {
-                http::StatusCode::NOT_FOUND
-            }
-            _ => http::StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
-
-// Handles non-existant routes
-pub(crate) async fn not_found(front: bool) -> HttpResponse {
-    // Will either serve a fancy or plaintext version, depending on whether the frontend is enabled
-    if front {
-        Error::NotFound.error_response()
-    } else {
-        HttpResponse::NotFound().body("not found")
     }
 }

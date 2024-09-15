@@ -10,7 +10,6 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web-static-files = "4.0"
 askama = "0.12"
 askama_axum = "0.4"
 axum = "0.7"
@@ -39,10 +38,6 @@ regex = "1.10.6"
 
 [build-dependencies]
 static-files = "0.2.1"
-
-[dependencies.actix-web]
-version = "4"
-features = ["rustls-0_23"]
 
 [dependencies.axum-server]
 version = "0.7"

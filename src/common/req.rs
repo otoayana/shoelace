@@ -1,5 +1,4 @@
 use crate::{proxy, Error, ShoelaceData};
-use actix_web::web::Data;
 use futures::future::join_all;
 use spools::{Media, Post, Threads, User};
 
