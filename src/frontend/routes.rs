@@ -1,3 +1,5 @@
+use std::{borrow::Borrow, sync::Arc};
+
 use crate::{
     frontend::templates::{Base, HomeView, PostView, UserView},
     req, Error, ShoelaceData,
@@ -8,7 +10,12 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use askama_axum::Template;
-use axum::{response::Html, routing::get, Router};
+use axum::{
+    extract::{Path, State},
+    response::Html,
+    routing::get,
+    Router,
+};
 use include_dir::{include_dir, Dir};
 use serde::{Deserialize, Serialize};
 use spools::{Post, User};
@@ -22,9 +29,16 @@ enum ResponseTypes {
     User(User),
 }
 
-pub(crate) fn attach(app: Router) -> Router {
+pub(crate) fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     let assets = ServeDir::new(&ASSETS_DIR);
-    let routed = app.route("/", get(home)).nest_service("/static", assets);
+    let mut routed = Router::new();
+
+    if enabled {
+        routed = routed
+            .route("/", get(home))
+            .route("/@:id", get(user))
+            .nest_service("/static", assets);
+    }
 
     routed
 }
@@ -44,66 +58,63 @@ async fn home() -> Result<Html<String>, Error> {
 }
 
 // User frontend
-#[actix_web::get("/@{user}")]
 async fn user(
-    user: web::Path<String>,
-    store: Data<ShoelaceData>,
-) -> askama_axum::Result<HttpResponse, Error> {
+    Path(user): Path<String>,
+    State(state): State<Arc<ShoelaceData>>,
+) -> Result<Html<String>, Error> {
     let mut base = Base::new()?;
 
     base.timer(true)?;
-    let req = req::user(user.clone(), store.to_owned()).await?;
+    let req = req::user(&user, state.borrow()).await?;
     base.timer(false)?;
 
     let template = UserView {
         base,
-        input: &user.into_inner(),
+        input: &user,
         output: req,
     }
     .render()?;
 
-    Ok(HttpResponse::Ok()
-        .insert_header(ContentType::html())
-        .body(template))
+    Ok(Html(template))
 }
 
-// Post frontend
-#[actix_web::get("/t/{post}")]
-async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-    let mut base = Base::new()?;
+// // Post frontend
+// #[actix_web::get("/t/{post}")]
+// async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
+//     let mut base = Base::new()?;
 
-    base.timer(true)?;
-    let req = req::post(post.clone(), store.to_owned()).await?;
-    base.timer(false)?;
+//     base.timer(true)?;
+//     let req = req::post(post.clone(), store.to_owned()).await?;
+//     base.timer(false)?;
 
-    let template = PostView {
-        base,
-        input: &post.into_inner(),
-        output: req,
-    }
-    .render()?;
+//     let template = PostView {
+//         base,
+//         input: &post.into_inner(),
+//         output: req,
+//     }
+//     .render()?;
 
-    Ok(HttpResponse::Ok()
-        .insert_header(ContentType::html())
-        .body(template))
-}
+//     Ok(HttpResponse::Ok()
+//         .insert_header(ContentType::html())
+//         .body(template))
+// }
 
-// User finder endpoint
-#[actix_web::get("/find")]
-async fn find(request: web::Query<Find>) -> impl Responder {
-    // Fetches query value
-    let values = request.into_inner();
+// // User finder endpoint
+// #[actix_web::get("/find")]
+// async fn find(request: web::Query<Find>) -> impl Responder {
+//     // Fetches query value
+//     let values = request.into_inner();
 
-    // Redirects to user
-    Redirect::to(format!("/@{}", values.value)).temporary()
-}
+//     // Redirects to user
+//     Redirect::to(format!("/@{}", values.value)).temporary()
+// }
 
-// Post redirect endpoint
-#[actix_web::get("/{_}/post/{path}")]
-async fn redirect(request: web::Path<((), String)>) -> impl Responder {
-    // Fetches path values
-    let values = request.into_inner();
+// // Post redirect endpoint
+// #[actix_web::get("/{_}/post/{path}")]
+// async fn redirect(request: web::Path<((), String)>) -> impl Responder {
+//     // Fetches path values
+//     let values = request.into_inner();
 
-    // Redirects to post
-    Redirect::to(format!("/t/{}", values.1)).permanent()
-}
+//     // Redirects to post
+//     Redirect::to(format!("/t/{}", values.1)).permanent()
+// }

@@ -2,14 +2,14 @@ use crate::{config::Proxy, proxy::KeystoreError};
 use core::fmt;
 use redis::ConnectionAddr;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 // Define keystores
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Keystore {
-    Internal(Mutex<HashMap<String, String>>),
+    Internal(Arc<Mutex<HashMap<String, String>>>),
     Redis(redis::aio::MultiplexedConnection),
     None,
 }
@@ -47,7 +47,7 @@ impl Keystore {
                 }
             }),
             // Internal (Creates hash map)
-            Backends::Internal => Self::Internal(Mutex::new(HashMap::new())),
+            Backends::Internal => Self::Internal(Arc::new(Mutex::new(HashMap::new()))),
             // No backend
             Backends::None => Self::None,
         };
