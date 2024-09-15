@@ -1,19 +1,28 @@
 pub(crate) mod error;
 pub(crate) mod keystore;
 
+use std::sync::Arc;
+
 pub(crate) use error::{Error, KeystoreError};
 pub(crate) use keystore::{Backends, Keystore};
 
 use crate::ShoelaceData;
-use actix_web::{
-    get,
-    web::{Data, Path},
-    HttpResponse,
+use axum::{
+    body::Body,
+    extract::{Path, State},
+    response::Response,
+    routing::get,
+    Router,
 };
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use blake2::{Blake2s256, Digest};
-use reqwest::get;
 use tracing::info;
+
+pub(crate) fn attach() -> Router<Arc<ShoelaceData>> {
+    let routed = Router::new().route("/:id", get(serve));
+
+    routed
+}
 
 // Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
@@ -61,18 +70,17 @@ pub(crate) async fn store(url: &str, data: &ShoelaceData) -> Result<String, Erro
 }
 
 // Proxies media from Threads
-#[tracing::instrument(err(Display), fields(error, path))]
-#[get("/{image}")]
-pub(crate) async fn serve(
-    path: Path<String>,
-    data: Data<ShoelaceData>,
-) -> Result<HttpResponse, Error> {
+#[tracing::instrument(err(Display), fields(error, hash))]
+async fn serve(
+    Path(hash): Path<String>,
+    State(data): State<Arc<ShoelaceData>>,
+) -> Result<Response, Error> {
     let url: String = match &data.store {
         Keystore::Internal(store) => {
             // Lock hash map
             let lock = store.lock().await;
 
-            match lock.get(&path.into_inner()) {
+            match lock.get(&hash) {
                 Some(object) => object.to_owned(),
                 None => return Err(Error::ObjectNotFound),
             }
@@ -81,7 +89,7 @@ pub(crate) async fn serve(
             let mut con = store.to_owned();
 
             redis::cmd("GET")
-                .arg(path.into_inner())
+                .arg(hash)
                 .query_async(&mut con)
                 .await
                 .map_err(KeystoreError::RedisError)?
@@ -89,16 +97,13 @@ pub(crate) async fn serve(
         Keystore::None => return Err(Error::NoProxy),
     };
 
-    // Pipes request to CDN
-    let media = get(url).await?.bytes().await?;
-
-    // Identifies MIME type
+    let media = reqwest::get(url).await?.bytes().await?;
     let mime = infer::get(&media);
 
     if let Some(mime_type) = mime {
-        Ok(HttpResponse::Ok()
-            .content_type(mime_type.to_string())
-            .body(media))
+        Ok(Response::builder()
+            .header("Content-Type", mime_type.to_string())
+            .body(Body::from(media))?)
     } else {
         Err(Error::UnidentifiableMime)
     }

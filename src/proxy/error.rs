@@ -1,4 +1,8 @@
-use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
+use actix_web::{error::ResponseError, http, HttpResponse};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use thiserror::Error;
 
 use crate::proxy::keystore::Backends;
@@ -16,6 +20,8 @@ pub(crate) enum Error {
     UnidentifiableMime,
     #[error("Keystore error: {0}")]
     Keystore(#[from] KeystoreError),
+    #[error("Web server error: {0}")]
+    Web(#[from] axum::http::Error),
 }
 
 // Defines keystore errors
@@ -27,16 +33,11 @@ pub(crate) enum KeystoreError {
     InvalidConfig(Backends),
 }
 
-// Defines plaintext error responses for proxy
-impl ResponseError for Error {
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code()).body(self.to_string())
-    }
-
-    fn status_code(&self) -> StatusCode {
-        match self {
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        let status: StatusCode = match self {
             Self::ObjectNotFound => StatusCode::NOT_FOUND,
-            Self::Endpoint(val) => {
+            Self::Endpoint(ref val) => {
                 if let Some(status) = val.status() {
                     match status {
                         reqwest::StatusCode::NOT_FOUND => StatusCode::NOT_FOUND,
@@ -47,6 +48,8 @@ impl ResponseError for Error {
                 }
             }
             _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
+        };
+
+        (status, self.to_string()).into_response()
     }
 }

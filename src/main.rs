@@ -114,6 +114,7 @@ async fn main() -> std::io::Result<()> {
     }
 
     let app = Router::new()
+        .nest("/proxy/", proxy::attach())
         .merge(frontend::routes::attach(config.endpoint.frontend))
         .with_state(data);
 
