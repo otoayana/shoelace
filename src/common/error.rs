@@ -57,17 +57,13 @@ pub(crate) enum Error {
 }
 
 impl Error {
-    pub(crate) fn into_plaintext(self) -> actix_web::Error {
-        match self {
-            Error::Threads(spools_err) => {
-                if let SpoolsError::NotFound(_) = spools_err {
-                    error::ErrorNotFound(spools_err)
-                } else {
-                    error::ErrorInternalServerError(spools_err)
-                }
-            }
-            _ => error::ErrorInternalServerError(self),
-        }
+    pub(crate) fn into_plaintext(self) -> Response {
+        let status = match self {
+            Error::Threads(SpoolsError::NotFound(_)) => StatusCode::NOT_FOUND,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+
+        (status, self.to_string()).into_response()
     }
 }
 
