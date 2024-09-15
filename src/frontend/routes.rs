@@ -37,6 +37,7 @@ pub(crate) fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
         routed = routed
             .route("/", get(home))
             .route("/@:id", get(user))
+            .route("/t/:id", get(post))
             .nest_service("/static", assets);
     }
 
@@ -78,26 +79,26 @@ async fn user(
     Ok(Html(template))
 }
 
-// // Post frontend
-// #[actix_web::get("/t/{post}")]
-// async fn post(post: web::Path<String>, store: Data<ShoelaceData>) -> Result<HttpResponse, Error> {
-//     let mut base = Base::new()?;
+// Post frontend
+async fn post(
+    Path(post): Path<String>,
+    State(state): State<Arc<ShoelaceData>>,
+) -> Result<Html<String>, Error> {
+    let mut base = Base::new()?;
 
-//     base.timer(true)?;
-//     let req = req::post(post.clone(), store.to_owned()).await?;
-//     base.timer(false)?;
+    base.timer(true)?;
+    let req = req::post(&post, state.borrow()).await?;
+    base.timer(false)?;
 
-//     let template = PostView {
-//         base,
-//         input: &post.into_inner(),
-//         output: req,
-//     }
-//     .render()?;
+    let template = PostView {
+        base,
+        input: &post,
+        output: req,
+    }
+    .render()?;
 
-//     Ok(HttpResponse::Ok()
-//         .insert_header(ContentType::html())
-//         .body(template))
-// }
+    Ok(Html(template))
+}
 
 // // User finder endpoint
 // #[actix_web::get("/find")]
