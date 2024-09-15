@@ -173,7 +173,10 @@ async fn main() -> std::io::Result<()> {
 
     let tls_params = match config.server.tls {
         Some(opt) => {
-            info!("TLS has been enabled");
+            if opt.enabled {
+                info!("TLS has been enabled");
+            }
+
             opt
         }
         None => Tls {
