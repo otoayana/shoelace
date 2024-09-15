@@ -6,13 +6,13 @@ use crate::{
 };
 use actix_web::{
     http::header::ContentType,
-    web::{self, Data, Redirect},
+    web::{self, Data},
     HttpResponse, Responder,
 };
 use askama_axum::Template;
 use axum::{
-    extract::{Path, State},
-    response::Html,
+    extract::{Path, Query, State},
+    response::{Html, Redirect},
     routing::get,
     Router,
 };
@@ -38,6 +38,7 @@ pub(crate) fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
             .route("/", get(home))
             .route("/@:id", get(user))
             .route("/t/:id", get(post))
+            .route("/find", get(find))
             .nest_service("/static", assets);
     }
 
@@ -100,15 +101,11 @@ async fn post(
     Ok(Html(template))
 }
 
-// // User finder endpoint
-// #[actix_web::get("/find")]
-// async fn find(request: web::Query<Find>) -> impl Responder {
-//     // Fetches query value
-//     let values = request.into_inner();
-
-//     // Redirects to user
-//     Redirect::to(format!("/@{}", values.value)).temporary()
-// }
+// User finder endpoint
+async fn find(Query(request): Query<Find>) -> Redirect {
+    // Redirects to user
+    Redirect::temporary(&format!("/@{}", request.value))
+}
 
 // // Post redirect endpoint
 // #[actix_web::get("/{_}/post/{path}")]
