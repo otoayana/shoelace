@@ -146,7 +146,16 @@ async fn main() -> Result<()> {
     let config = Settings::new()?;
 
     let filter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::INFO.into())
+        .with_default_directive(
+            match config.logging.level.as_str() {
+                "error" => LevelFilter::ERROR,
+                "warn" => LevelFilter::WARN,
+                "debug" => LevelFilter::DEBUG,
+                "trace" => LevelFilter::TRACE,
+                "info" | _ => LevelFilter::INFO,
+            }
+            .into(),
+        )
         .from_env()?;
 
     let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
