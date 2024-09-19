@@ -14,6 +14,7 @@ use tracing_log::LogTracer;
 mod test;
 
 use crate::common::config::{Settings, Tls};
+use anyhow::Result;
 use axum::{
     body::Body,
     extract::{ConnectInfo, Request, State},
@@ -27,7 +28,6 @@ use lazy_static::lazy_static;
 use proxy::Keystore;
 use std::{
     fs::File,
-    io::{self, ErrorKind},
     net::SocketAddr,
     process::id,
     sync::{Arc, Mutex},
@@ -142,13 +142,12 @@ async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body)
 // Web server
 #[instrument(name = "shoelace::main")]
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
+async fn main() -> Result<()> {
+    let config = Settings::new()?;
 
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
-        .from_env()
-        .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+        .from_env()?;
 
     let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let registry = Registry::default()
@@ -161,8 +160,8 @@ async fn main() -> std::io::Result<()> {
         .with(Layer::default().with_writer(non_blocking))
         .with(filter);
 
-    tracing::subscriber::set_global_default(registry).unwrap();
-    LogTracer::init().map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+    tracing::subscriber::set_global_default(registry)?;
+    LogTracer::init()?;
 
     info!(
         "👟 Shoelace {} | PID: {} | https://sr.ht/~nixgoat/shoelace",
@@ -171,9 +170,7 @@ async fn main() -> std::io::Result<()> {
     );
 
     let data = Arc::new(ShoelaceData {
-        store: Keystore::new(config.proxy)
-            .await
-            .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
+        store: Keystore::new(config.proxy).await?,
         log_cdn: config.logging.log_cdn,
         log_ips: config.logging.log_ips,
         frontend: config.endpoint.frontend,
@@ -220,22 +217,14 @@ async fn main() -> std::io::Result<()> {
     );
 
     if !tls_params.enabled {
-        axum_server::bind(
-            format!("{}:{}", config.server.listen, config.server.port)
-                .parse()
-                .unwrap(),
-        )
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .await?
+        axum_server::bind(format!("{}:{}", config.server.listen, config.server.port).parse()?)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+            .await?
     } else {
-        let tls_config = RustlsConfig::from_pem_file(tls_params.cert, tls_params.key)
-            .await
-            .unwrap();
+        let tls_config = RustlsConfig::from_pem_file(tls_params.cert, tls_params.key).await?;
 
         axum_server::bind_rustls(
-            format!("{}:{}", config.server.listen, config.server.port)
-                .parse()
-                .unwrap(),
+            format!("{}:{}", config.server.listen, config.server.port).parse()?,
             tls_config,
         )
         .serve(app.into_make_service())
