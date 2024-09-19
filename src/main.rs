@@ -4,7 +4,6 @@ mod frontend;
 mod proxy;
 mod rss;
 
-use actix_web::http::StatusCode;
 use axum_server::tls_rustls::RustlsConfig;
 pub(crate) use common::config;
 pub(crate) use common::error::Error;
@@ -15,23 +14,33 @@ use tracing_log::LogTracer;
 mod test;
 
 use crate::common::config::{Settings, Tls};
-use axum::Router;
+use axum::{
+    extract::Request,
+    extract::{ConnectInfo, State},
+    http::StatusCode,
+    middleware::{self, Next},
+    response::Response,
+    RequestPartsExt, Router,
+};
 use git_version::git_version;
 use lazy_static::lazy_static;
 use proxy::Keystore;
 use std::{
     fs::File,
     io::{self, ErrorKind},
+    net::SocketAddr,
     process::id,
     sync::{Arc, Mutex},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tracing::{info, instrument, warn};
-use tracing_subscriber::{fmt::Layer, prelude::*, EnvFilter, Registry};
+use tracing_subscriber::{filter::LevelFilter, fmt::Layer, prelude::*, EnvFilter, Registry};
 
 #[derive(Debug)]
 pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
     pub(crate) log_cdn: bool,
+    log_ips: bool,
     pub(crate) base_url: String,
 }
 
@@ -45,14 +54,77 @@ lazy_static! {
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-fn _log_err<'a>(status: StatusCode) -> &'a str {
-    if status == StatusCode::NOT_FOUND {
-        "??"
-    } else if status == StatusCode::OK {
+#[instrument(name = "web", skip(state, request, next))]
+async fn logger<'a>(
+    State(state): State<Arc<ShoelaceData>>,
+    request: axum::extract::Request,
+    next: Next,
+) -> axum::response::Response {
+    let start = SystemTime::now();
+    let tse_start: Option<Duration> = match start.duration_since(UNIX_EPOCH) {
+        Ok(time) => Some(time),
+        Err(_) => None,
+    };
+
+    let (parts, body) = request.into_parts();
+    let mut inner_parts = parts.clone();
+
+    let ip: String = if state.log_ips {
+        format!(
+            " {} ",
+            match inner_parts.extract::<ConnectInfo<SocketAddr>>().await {
+                Ok(ip) => ip.ip().to_string(),
+                Err(_) => "unknown".to_string(),
+            },
+        )
+    } else {
+        " ".to_string()
+    };
+
+    let rebuilt_req = Request::from_parts(parts, body);
+    let uri = rebuilt_req.uri().clone();
+
+    let response = next.run(rebuilt_req).await;
+    let (res_parts, res_body) = response.into_parts();
+    let res = Response::from_parts(res_parts, res_body);
+
+    let status = res.status();
+    let status_chunk = if status == StatusCode::OK {
         "<3"
+    } else if status == StatusCode::NOT_FOUND {
+        "??"
     } else {
         "!!"
-    }
+    };
+
+    let end = SystemTime::now();
+    let tse_end: Option<Duration> = match end.duration_since(UNIX_EPOCH) {
+        Ok(time) => Some(time),
+        Err(_) => None,
+    };
+
+    let duration = if let (Some(e), Some(s)) = (tse_end, tse_start) {
+        format!("{:?}", e - s)
+    } else {
+        String::new()
+    };
+
+    let message = format!(
+        "{} {} {}{}{}",
+        status_chunk,
+        status.as_u16(),
+        uri,
+        ip,
+        duration
+    );
+
+    if status.as_u16() < 500 {
+        info!("{}", message)
+    } else {
+        warn!("{}", message)
+    };
+
+    res
 }
 
 // Web server
@@ -62,13 +134,9 @@ async fn main() -> std::io::Result<()> {
     let config = Settings::new().map_err(|err| io::Error::new(ErrorKind::InvalidInput, err))?;
 
     let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
         .from_env()
         .map_err(|err| io::Error::new(ErrorKind::Other, err))?
-        .add_directive(
-            "none"
-                .parse()
-                .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
-        )
         .add_directive(
             format!("shoelace={}", config.logging.level)
                 .parse()
@@ -100,6 +168,7 @@ async fn main() -> std::io::Result<()> {
             .await
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
         log_cdn: config.logging.log_cdn,
+        log_ips: config.logging.log_ips,
         base_url: config.server.base_url.clone(),
     });
 
@@ -118,57 +187,14 @@ async fn main() -> std::io::Result<()> {
         .nest("/rss/", rss::attach(config.endpoint.rss))
         .nest("/proxy/", proxy::attach())
         .merge(frontend::routes::attach(config.endpoint.frontend))
+        .layer(middleware::from_fn_with_state(data.clone(), logger))
         .with_state(data);
 
     // let mut server = HttpServer::new(move || {
     //     let mut app = App::new()
-    //         .wrap(
-    //             Logger::new(
-    //                 format!(
-    //                     "%{{ERROR_STATUS}}xo %s{}%U %Dms",
-    //                     if config.logging.log_ips {
-    //                         " %{r}a"
-    //                     } else {
-    //                         " "
-    //                     }
-    //                 )
-    //                 .as_str(),
-    //             )
-    //             .custom_response_replace("ERROR_STATUS", log_err)
-    //             .log_target("shoelace::web"),
-    //         )
-    //         .app_data(data.clone())
     //         .default_service(web::to(move || {
     //             common::error::not_found(config.endpoint.frontend)
     //         }))
-    //         .service(web::scope("/proxy").service(proxy::serve));
-
-    //     if config.endpoint.frontend {
-    //         // Loads static files
-    //         let generated = generate();
-
-    //         // Adds services to app
-    //         app = app
-    //             .service(ResourceFiles::new("/static", generated))
-    //             .service(frontend::routes::user)
-    //             .service(frontend::routes::post)
-    //             .service(frontend::routes::home)
-    //             .service(frontend::routes::find)
-    //             .service(frontend::routes::redirect);
-    //     }
-
-    //     // API
-    //     if config.endpoint.api {
-    //         app = app.service(web::scope("/api").service(api::post).service(api::user));
-    //     }
-
-    //     // RSS
-    //     if config.endpoint.rss {
-    //         app = app.service(web::scope("/rss").service(rss::user))
-    //     }
-
-    //     // Returns app definition
-    //     app
     // });
 
     let tls_params = match config.server.tls {
@@ -197,7 +223,7 @@ async fn main() -> std::io::Result<()> {
                 .parse()
                 .unwrap(),
         )
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?
     } else {
         let tls_config = RustlsConfig::from_pem_file(tls_params.cert, tls_params.key)
