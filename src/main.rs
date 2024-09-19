@@ -148,12 +148,7 @@ async fn main() -> std::io::Result<()> {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env()
-        .map_err(|err| io::Error::new(ErrorKind::Other, err))?
-        .add_directive(
-            format!("shoelace={}", config.logging.level)
-                .parse()
-                .map_err(|err| io::Error::new(ErrorKind::Other, err))?,
-        );
+        .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
     let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let registry = Registry::default()
