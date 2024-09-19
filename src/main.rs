@@ -15,11 +15,11 @@ mod test;
 
 use crate::common::config::{Settings, Tls};
 use axum::{
-    extract::Request,
-    extract::{ConnectInfo, State},
+    body::Body,
+    extract::{ConnectInfo, Request, State},
     http::StatusCode,
     middleware::{self, Next},
-    response::Response,
+    response::{Html, IntoResponse, Response},
     RequestPartsExt, Router,
 };
 use git_version::git_version;
@@ -41,6 +41,7 @@ pub(crate) struct ShoelaceData {
     pub(crate) store: Keystore,
     pub(crate) log_cdn: bool,
     log_ips: bool,
+    frontend: bool,
     pub(crate) base_url: String,
 }
 
@@ -127,6 +128,17 @@ async fn logger<'a>(
     res
 }
 
+async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body) {
+    (
+        StatusCode::NOT_FOUND,
+        if state.frontend {
+            Error::NotFound.into_response().into_body()
+        } else {
+            Error::NotFound.into_plaintext().into_body()
+        },
+    )
+}
+
 // Web server
 #[instrument(name = "shoelace::main")]
 #[tokio::main]
@@ -169,6 +181,7 @@ async fn main() -> std::io::Result<()> {
             .map_err(|err| io::Error::new(ErrorKind::ConnectionRefused, err))?,
         log_cdn: config.logging.log_cdn,
         log_ips: config.logging.log_ips,
+        frontend: config.endpoint.frontend,
         base_url: config.server.base_url.clone(),
     });
 
@@ -188,14 +201,8 @@ async fn main() -> std::io::Result<()> {
         .nest("/proxy/", proxy::attach())
         .merge(frontend::routes::attach(config.endpoint.frontend))
         .layer(middleware::from_fn_with_state(data.clone(), logger))
+        .fallback(not_found)
         .with_state(data);
-
-    // let mut server = HttpServer::new(move || {
-    //     let mut app = App::new()
-    //         .default_service(web::to(move || {
-    //             common::error::not_found(config.endpoint.frontend)
-    //         }))
-    // });
 
     let tls_params = match config.server.tls {
         Some(opt) => {
