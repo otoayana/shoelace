@@ -127,7 +127,7 @@ async fn find(request: web::Query<Find>) -> impl Responder {
 }
 
 // Post redirect endpoint
-#[get("/{_}/post/{path}")]
+#[get("/@{_}/post/{path}")]
 async fn redirect(request: web::Path<((), String)>) -> impl Responder {
     // Fetches path values
     let values = request.into_inner();
