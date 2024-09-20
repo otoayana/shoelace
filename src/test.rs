@@ -1,106 +1,95 @@
 use crate::{api, frontend, proxy, ShoelaceData};
-use actix_web::{test, web, App};
+use axum::{http::StatusCode, Router};
+use axum_test::TestServer;
 use spools::{Post, User};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
 const TEST_APP_DATA: ShoelaceData = ShoelaceData {
     store: crate::proxy::Keystore::None,
     log_cdn: false,
+    log_ips: false,
+    frontend: true,
     base_url: String::new(),
 };
 
-#[actix_web::test]
+#[tokio::test]
 async fn user_fe() {
-    let app = test::init_service(
-        App::new()
-            .service(frontend::user)
-            .app_data(web::Data::new(TEST_APP_DATA)),
-    )
-    .await;
+    let app = Router::new()
+        .merge(frontend::routes::attach(true))
+        .with_state(Arc::new(TEST_APP_DATA));
+    let server = TestServer::new(app).unwrap();
 
-    let req = test::TestRequest::get().uri("/@zuck").to_request();
-    let resp = test::call_service(&app, req).await;
+    let response = server.get("/@zuck").await;
 
-    println!("{:#?}", resp);
-    assert!(resp.status().is_success());
+    println!("{:#?}", response);
+    assert_eq!(response.status_code(), StatusCode::OK);
 }
 
-#[actix_web::test]
+#[tokio::test]
 async fn post_fe() {
-    let app = test::init_service(
-        App::new()
-            .service(frontend::post)
-            .app_data(web::Data::new(TEST_APP_DATA)),
-    )
-    .await;
+    let app = Router::new()
+        .merge(frontend::routes::attach(true))
+        .with_state(Arc::new(TEST_APP_DATA));
+    let server = TestServer::new(app).unwrap();
 
-    let req = test::TestRequest::get().uri("/t/C2QBoRaRmR1").to_request();
-    let resp = test::call_service(&app, req).await;
+    let response = server.get("/t/C2QBoRaRmR1").await;
 
-    println!("{:#?}", resp);
-    assert!(resp.status().is_success());
+    println!("{:#?}", response);
+    assert_eq!(response.status_code(), StatusCode::OK);
 }
 
-#[actix_web::test]
+#[tokio::test]
 async fn user_api() {
-    let app = test::init_service(
-        App::new()
-            .service(api::user)
-            .app_data(web::Data::new(TEST_APP_DATA)),
-    )
-    .await;
+    let app = Router::new()
+        .nest("/api/", api::attach(true))
+        .with_state(Arc::new(TEST_APP_DATA));
+    let server = TestServer::new(app).unwrap();
 
-    let req = test::TestRequest::get().uri("/user/zuck").to_request();
-    let resp: User = test::call_and_read_body_json(&app, req).await;
+    let response = server.get("/api/user/zuck").await;
+    println!("{:#?}", response);
 
-    println!("{:#?}", resp);
-    assert_eq!(resp.id, 314216)
+    let user: User = response.json();
+    assert_eq!(user.id, 314216)
 }
 
-#[actix_web::test]
+#[tokio::test]
 async fn post_api() {
-    let app = test::init_service(
-        App::new()
-            .service(api::post)
-            .app_data(web::Data::new(TEST_APP_DATA)),
-    )
-    .await;
+    let app = Router::new()
+        .nest("/api/", api::attach(true))
+        .with_state(Arc::new(TEST_APP_DATA));
+    let server = TestServer::new(app).unwrap();
 
-    let req = test::TestRequest::get()
-        .uri("/post/C2QBoRaRmR1")
-        .to_request();
-    let resp: Post = test::call_and_read_body_json(&app, req).await;
+    let response = server.get("/api/post/C2QBoRaRmR1").await;
+    println!("{:#?}", response);
 
-    println!("{:#?}", resp);
-    assert_eq!(resp.id, "3283131293873103989")
+    let post: Post = response.json();
+    assert_eq!(post.id, "3283131293873103989")
 }
 
-#[actix_web::test]
+#[tokio::test]
 async fn proxy() {
-    let app = test::init_service(
-        App::new()
-            .service(api::user)
-            .service(web::scope("/proxy").service(proxy::serve))
-            .app_data(web::Data::new(ShoelaceData {
-                store: crate::proxy::Keystore::Internal(Mutex::new(HashMap::new())),
-                log_cdn: false,
-                base_url: "".to_string(),
-            })),
-    )
-    .await;
+    let app = Router::new()
+        .nest("/api/", api::attach(true))
+        .nest("/proxy/", proxy::attach())
+        .with_state(Arc::new(ShoelaceData {
+            store: crate::proxy::Keystore::Internal(Arc::new(Mutex::new(HashMap::new()))),
+            log_ips: false,
+            log_cdn: false,
+            frontend: false,
+            base_url: "".to_string(),
+        }));
+    let server = TestServer::new(app).unwrap();
 
     // In order to test proxy functionality, we need to generate a media hash to check
-    let api_req = test::TestRequest::get().uri("/user/zuck").to_request();
-    let api_resp: User = test::call_and_read_body_json(&app, api_req).await;
+    let api = server.get("/api/user/zuck").await;
+    println!("{:#?}", api);
 
-    println!("{:#?}", api_resp);
-    assert_eq!(api_resp.id, 314216);
+    let user: User = api.json();
+    assert_eq!(user.id, 314216);
 
-    let pfp = api_resp.pfp;
-    let req = test::TestRequest::get().uri(&pfp).to_request();
-    let resp = test::call_service(&app, req).await;
+    let response = server.get(&user.pfp).await;
 
-    println!("{:#?}", resp);
-    assert!(resp.status().is_success());
+    println!("{:#?}", response);
+    assert_eq!(response.status_code(), StatusCode::OK);
 }
