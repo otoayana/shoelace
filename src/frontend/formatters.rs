@@ -61,7 +61,7 @@ pub(super) fn body(body: &str, base: &Base) -> Result<String, Error> {
                     let right = &inner_body[(matched.end() as isize + offset) as usize..];
                     let text = matched.as_str();
 
-                    let link = format!("<a href=\"{}/{}\">{}</a>", base.base_url, text, text);
+                    let link = format!("<a href=\"{}/{}\">{}</a>", base.url, text, text);
                     offset += link.clone().len() as isize - text.len() as isize;
 
                     inner_body = format!("{}{}{}", left, link, right);

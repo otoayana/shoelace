@@ -8,7 +8,7 @@ use tracing::{info, warn};
 
 // Define keystores
 #[derive(Debug, Clone)]
-pub(crate) enum Keystore {
+pub enum Keystore {
     Internal(Arc<Mutex<HashMap<String, String>>>),
     Redis(redis::aio::MultiplexedConnection),
     None,
@@ -16,7 +16,7 @@ pub(crate) enum Keystore {
 
 // Possible backends
 #[derive(Debug, Deserialize, Clone)]
-pub(crate) enum Backends {
+pub enum Backends {
     None,
     Internal,
     Redis,
@@ -24,7 +24,7 @@ pub(crate) enum Backends {
 
 impl Keystore {
     #[tracing::instrument(name = "init", skip(config))]
-    pub(crate) async fn new(config: Proxy) -> Result<Self, KeystoreError> {
+    pub async fn new(config: Proxy) -> Result<Self, KeystoreError> {
         let mut redis_conninfo: Option<ConnectionAddr> = None;
 
         let backend = match config.backend {

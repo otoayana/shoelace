@@ -13,7 +13,7 @@ async fn media_store(media: &mut Media, store: &ShoelaceData) -> Result<(), prox
 
 // Fetches a user, and proxies its media
 #[tracing::instrument(err(Display), skip(user, store), fields(error))]
-pub(crate) async fn user<'a>(user: &'a str, store: &ShoelaceData) -> Result<User, Error> {
+pub async fn user<'a>(user: &'a str, store: &ShoelaceData) -> Result<User, Error> {
     // Fetch user
     let thread = Threads::new()?;
     let mut resp = thread.fetch_user(&user).await?;
@@ -43,7 +43,7 @@ pub(crate) async fn user<'a>(user: &'a str, store: &ShoelaceData) -> Result<User
 
 // Fetches a post, and proxies its media
 #[tracing::instrument(err(Display), skip(post, store), fields(error))]
-pub(crate) async fn post<'a>(post: &'a str, store: &ShoelaceData) -> Result<Post, Error> {
+pub async fn post<'a>(post: &'a str, store: &ShoelaceData) -> Result<Post, Error> {
     // Fetch post
     let thread = Threads::new()?;
     let mut resp = thread.fetch_post(&post).await?;

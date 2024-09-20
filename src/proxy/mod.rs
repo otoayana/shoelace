@@ -1,10 +1,10 @@
-pub(crate) mod error;
-pub(crate) mod keystore;
+pub mod error;
+pub mod keystore;
 
 use std::sync::Arc;
 
-pub(crate) use error::{Error, KeystoreError};
-pub(crate) use keystore::{Backends, Keystore};
+pub use error::{Error, KeystoreError};
+pub use keystore::{Backends, Keystore};
 
 use crate::ShoelaceData;
 use axum::{
@@ -18,7 +18,7 @@ use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use blake2::{Blake2s256, Digest};
 use tracing::info;
 
-pub(crate) fn attach() -> Router<Arc<ShoelaceData>> {
+pub fn attach() -> Router<Arc<ShoelaceData>> {
     let routed = Router::new().route("/:id", get(serve));
 
     routed
@@ -26,7 +26,7 @@ pub(crate) fn attach() -> Router<Arc<ShoelaceData>> {
 
 // Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
-pub(crate) async fn store(url: &str, data: &ShoelaceData) -> Result<String, Error> {
+pub async fn store(url: &str, data: &ShoelaceData) -> Result<String, Error> {
     // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());
     let hashstring = URL_SAFE.encode(hash).to_string();

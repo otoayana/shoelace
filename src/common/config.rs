@@ -12,66 +12,66 @@ use std::fs::metadata;
 
 // Settings structure
 #[derive(Debug, Deserialize)]
-pub(crate) struct Settings {
-    pub(crate) server: Server,
-    pub(crate) endpoint: Endpoint,
-    pub(crate) proxy: Proxy,
-    pub(crate) logging: Logging,
+pub struct Settings {
+    pub server: Server,
+    pub endpoint: Endpoint,
+    pub proxy: Proxy,
+    pub logging: Logging,
 }
 
 // Server settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Server {
-    pub(crate) listen: String,
-    pub(crate) port: u16,
-    pub(crate) base_url: String,
-    pub(crate) tls: Option<Tls>,
+pub struct Server {
+    pub listen: String,
+    pub port: u16,
+    pub base_url: String,
+    pub tls: Option<Tls>,
 }
 
 // TLS settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Tls {
-    pub(crate) enabled: bool,
-    pub(crate) cert: String,
-    pub(crate) key: String,
+pub struct Tls {
+    pub enabled: bool,
+    pub cert: String,
+    pub key: String,
 }
 
 // Endpoint settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Endpoint {
-    pub(crate) frontend: bool,
-    pub(crate) api: bool,
-    pub(crate) rss: bool,
+pub struct Endpoint {
+    pub frontend: bool,
+    pub api: bool,
+    pub rss: bool,
 }
 
 // Proxy settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Proxy {
-    pub(crate) backend: Backends,
-    pub(crate) redis: Option<Redis>,
+pub struct Proxy {
+    pub backend: Backends,
+    pub redis: Option<Redis>,
 }
 
 // Redis settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Redis {
-    pub(crate) uri: String,
+pub struct Redis {
+    pub uri: String,
 }
 
 // Logging settings
 #[derive(Debug, Deserialize)]
-pub(crate) struct Logging {
-    pub(crate) level: String,
+pub struct Logging {
+    pub level: String,
 
-    pub(crate) log_ips: bool,
-    pub(crate) log_cdn: bool,
+    pub log_ips: bool,
+    pub log_cdn: bool,
 
-    pub(crate) store: bool,
-    pub(crate) output: String,
+    pub store: bool,
+    pub output: String,
 }
 
 // Implement constructor
 impl Settings {
-    pub(crate) fn new() -> Result<Self, ConfigError> {
+    pub fn new() -> Result<Self, ConfigError> {
         // Sets potential paths for config file
         let config_path = match env::var("SHOELACE_CONFIG") {
             Ok(path) => path,

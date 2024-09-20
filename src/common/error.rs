@@ -13,7 +13,7 @@ use tracing_log::log::SetLoggerError;
 use crate::frontend::Base;
 
 #[derive(Error, Debug)]
-pub(crate) enum TimerError {
+pub enum TimerError {
     ClockSkew,
     NotStarted,
 }
@@ -30,7 +30,7 @@ impl Display for TimerError {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum Error {
+pub enum Error {
     #[error("{0}")]
     Threads(#[from] SpoolsError),
     #[error("proxy failed: {0}")]
@@ -52,7 +52,7 @@ pub(crate) enum Error {
 }
 
 impl Error {
-    pub(crate) fn into_plaintext(self) -> Response {
+    pub fn into_plaintext(self) -> Response {
         let status = match self {
             Error::Threads(SpoolsError::NotFound(_)) => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
@@ -78,7 +78,7 @@ impl IntoResponse for Error {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        let template = crate::frontend::ErrorView {
+        let template = crate::frontend::templates::ErrorView {
             base,
             status: self.status().as_str(),
             error: self.to_string().as_str(),

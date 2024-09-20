@@ -1,5 +1,6 @@
 mod formatters;
 pub mod routes;
-mod templates;
+pub mod templates;
 
-pub use templates::{Base, ErrorView};
+pub use routes::attach;
+pub use templates::Base;

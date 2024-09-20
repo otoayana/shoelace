@@ -5,9 +5,9 @@ mod proxy;
 mod rss;
 
 use axum_server::tls_rustls::RustlsConfig;
-pub(crate) use common::config;
-pub(crate) use common::error::Error;
-pub(crate) use common::req;
+use common::config;
+use common::error::Error;
+use common::req;
 use tracing_log::LogTracer;
 
 #[cfg(test)]
@@ -20,7 +20,7 @@ use axum::{
     extract::{ConnectInfo, Request, State},
     http::StatusCode,
     middleware::{self, Next},
-    response::{Html, IntoResponse, Response},
+    response::IntoResponse,
     RequestPartsExt, Router,
 };
 use git_version::git_version;
@@ -37,12 +37,12 @@ use tracing::{info, instrument, warn};
 use tracing_subscriber::{filter::LevelFilter, fmt::Layer, prelude::*, EnvFilter, Registry};
 
 #[derive(Debug)]
-pub(crate) struct ShoelaceData {
-    pub(crate) store: Keystore,
-    pub(crate) log_cdn: bool,
+pub struct ShoelaceData {
+    pub store: Keystore,
+    pub log_cdn: bool,
     log_ips: bool,
     frontend: bool,
-    pub(crate) base_url: String,
+    pub base_url: String,
 }
 
 lazy_static! {
@@ -86,10 +86,8 @@ async fn logger<'a>(
     let uri = rebuilt_req.uri().clone();
 
     let response = next.run(rebuilt_req).await;
-    let (res_parts, res_body) = response.into_parts();
-    let res = Response::from_parts(res_parts, res_body);
 
-    let status = res.status();
+    let status = response.status();
     let status_chunk = if status == StatusCode::OK {
         "<3"
     } else if status == StatusCode::NOT_FOUND {
@@ -125,7 +123,7 @@ async fn logger<'a>(
         warn!("{}", message)
     };
 
-    res
+    response
 }
 
 async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body) {
@@ -200,7 +198,7 @@ async fn main() -> Result<()> {
         .nest("/api/", api::attach(config.endpoint.api))
         .nest("/rss/", rss::attach(config.endpoint.rss))
         .nest("/proxy/", proxy::attach())
-        .merge(frontend::routes::attach(config.endpoint.frontend))
+        .merge(frontend::attach(config.endpoint.frontend))
         .layer(middleware::from_fn_with_state(data.clone(), logger))
         .fallback(not_found)
         .with_state(data);

@@ -159,7 +159,7 @@ impl PostRender for Post {
 pub struct Base {
     rev: &'static str,
     rss: bool,
-    pub(super) base_url: String,
+    pub(super) url: String,
     time: Option<u128>,
 }
 
@@ -171,7 +171,7 @@ impl Base {
         Ok(Base {
             rev: &REVISION,
             rss: config.endpoint.rss,
-            base_url: config.server.base_url,
+            url: config.server.base_url,
             time: None,
         })
     }
@@ -223,24 +223,24 @@ impl Base {
 
 #[derive(Debug, Template)]
 #[template(path = "home.j2")]
-pub struct HomeView {
-    pub base: Base,
+pub(super) struct HomeView {
+    pub(super) base: Base,
 }
 
 #[derive(Debug, Template)]
 #[template(path = "user.j2")]
-pub struct UserView<'a> {
-    pub base: Base,
-    pub input: &'a str,
-    pub output: User,
+pub(super) struct UserView<'a> {
+    pub(super) base: Base,
+    pub(super) input: &'a str,
+    pub(super) output: User,
 }
 
 #[derive(Debug, Template)]
 #[template(path = "post.j2")]
-pub struct PostView<'a> {
-    pub base: Base,
-    pub input: &'a str,
-    pub output: Post,
+pub(super) struct PostView<'a> {
+    pub(super) base: Base,
+    pub(super) input: &'a str,
+    pub(super) output: Post,
 }
 
 #[derive(Debug, Template)]

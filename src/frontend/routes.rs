@@ -24,7 +24,7 @@ enum ResponseTypes {
     User(User),
 }
 
-pub(crate) fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
+pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     let assets = ServeDir::new(&ASSETS_DIR);
     let mut routed = Router::new();
 

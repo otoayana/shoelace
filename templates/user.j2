@@ -16,7 +16,7 @@
 	<meta property="og:description" content="{{output.bio}}">
 	<meta property="og:image" content="{{output.pfp|safe }}">
 	<meta property="og:image:alt" content="Profile picture for user @{{input}}">
-	<meta property="og:url" content="{{ base.base_url|safe }}/@{{input}}">
+	<meta property="og:url" content="{{ base.url|safe }}/@{{input}}">
 	<meta property="og:first_name" content="{{output.name}}">
 	<meta property="og:username" content="@{{input}}">
 {% endblock head %}
@@ -33,7 +33,7 @@
 					<img class="user-verified" src="/static/img/verified.svg" alt="Verified" title="Verified">
 				{%- endif -%}
 				{%- if base.rss -%}
-					<a class="user-feed-link" href="{{base.base_url}}/rss/{{input}}" title="Subscribe to RSS feed">
+					<a class="user-feed-link" href="{{base.url}}/rss/{{input}}" title="Subscribe to RSS feed">
 						<img class="user-feed" src="/static/img/feed.svg" alt="Subscribe to RSS feed">
 					</a>
 				{%- endif -%}				
