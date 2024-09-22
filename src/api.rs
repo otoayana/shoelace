@@ -24,7 +24,7 @@ pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
 
 // User API endpoint
 async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) -> Response {
-    let resp = req::user(&user, &store.borrow()).await;
+    let resp = req::user(&user, store.borrow()).await;
 
     match resp {
         Ok(body) => (StatusCode::OK, Json(body)).into_response(),
@@ -34,7 +34,7 @@ async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) 
 
 // // Post API endpoint
 async fn post(Path(post): Path<String>, State(store): State<Arc<ShoelaceData>>) -> Response {
-    let resp = req::post(&post, &store.borrow()).await;
+    let resp = req::post(&post, store.borrow()).await;
 
     match resp {
         Ok(body) => (StatusCode::OK, Json(body)).into_response(),

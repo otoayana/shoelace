@@ -26,11 +26,15 @@ pub fn attach() -> Router<Arc<ShoelaceData>> {
 
 // Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
-pub async fn store(url: &str, data: &ShoelaceData) -> Result<String, Error> {
+pub async fn store(url: &str, data: ShoelaceData) -> Result<String, Error> {
     // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());
     let hashstring = URL_SAFE.encode(hash).to_string();
-    let hash_url = format!("{}/proxy/{}", data.base_url, hashstring.clone());
+    let hash_url = format!(
+        "{}/proxy/{}",
+        data.config.server.base_url,
+        hashstring.clone()
+    );
 
     // Find which keystore is being used
     let result = match &data.store {
@@ -58,7 +62,7 @@ pub async fn store(url: &str, data: &ShoelaceData) -> Result<String, Error> {
         info!(
             "Spawned hash {}{}",
             &hashstring,
-            if data.log_cdn {
+            if data.config.logging.log_cdn {
                 format!(" -> {}", url)
             } else {
                 String::from("")

@@ -40,7 +40,7 @@ async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) 
                             response.name,
                             date.format("%Y-%m-%d")
                         ))
-                        .link(format!("{}/t/{}", store.base_url, post.code))
+                        .link(format!("{}/t/{}", store.config.server.base_url, post.code))
                         .description(post.body.clone())
                         .author(format!("@{}", post.author.username))
                         .pub_date(date.to_rfc2822())
@@ -55,7 +55,11 @@ async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) 
 
             let channel = ChannelBuilder::default()
                 .title(format!("{} (@{})", response.name, user.clone()))
-                .link(format!("{}/@{}", store.base_url, user.clone()))
+                .link(format!(
+                    "{}/@{}",
+                    store.config.server.base_url,
+                    user.clone()
+                ))
                 .description(response.bio)
                 .image(pfp)
                 .items(items)

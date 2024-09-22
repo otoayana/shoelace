@@ -8,6 +8,7 @@ use axum_server::tls_rustls::RustlsConfig;
 use common::config;
 use common::error::Error;
 use common::req;
+use frontend::Base;
 use tracing_log::LogTracer;
 
 #[cfg(test)]
@@ -36,13 +37,11 @@ use std::{
 use tracing::{info, instrument, warn};
 use tracing_subscriber::{filter::LevelFilter, fmt::Layer, prelude::*, EnvFilter, Registry};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ShoelaceData {
     pub store: Keystore,
-    pub log_cdn: bool,
-    log_ips: bool,
-    frontend: bool,
-    pub base_url: String,
+    pub base: Base,
+    pub config: Settings,
 }
 
 lazy_static! {
@@ -55,6 +54,7 @@ lazy_static! {
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
+/// Issues a log entry for a request
 #[instrument(name = "web", skip(state, request, next))]
 async fn logger<'a>(
     State(state): State<Arc<ShoelaceData>>,
@@ -67,10 +67,11 @@ async fn logger<'a>(
         Err(_) => None,
     };
 
+    // Consume, then join the request, to fetch the client IP
     let (parts, body) = request.into_parts();
     let mut inner_parts = parts.clone();
 
-    let ip: String = if state.log_ips {
+    let ip: String = if state.config.logging.log_ips {
         format!(
             " {} ",
             match inner_parts.extract::<ConnectInfo<SocketAddr>>().await {
@@ -129,7 +130,7 @@ async fn logger<'a>(
 async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body) {
     (
         StatusCode::NOT_FOUND,
-        if state.frontend {
+        if state.config.endpoint.frontend {
             Error::NotFound.into_response().into_body()
         } else {
             Error::NotFound.into_plaintext().into_body()
@@ -159,7 +160,7 @@ async fn main() -> Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stdout());
     let registry = Registry::default()
         .with(if config.logging.store {
-            let file = File::create(config.logging.output)?;
+            let file = File::create(config.clone().logging.output)?;
             Some(Layer::default().with_writer(Mutex::new(file)))
         } else {
             None
@@ -177,11 +178,9 @@ async fn main() -> Result<()> {
     );
 
     let data = Arc::new(ShoelaceData {
-        store: Keystore::new(config.proxy).await?,
-        log_cdn: config.logging.log_cdn,
-        log_ips: config.logging.log_ips,
-        frontend: config.endpoint.frontend,
-        base_url: config.server.base_url.clone(),
+        store: Keystore::new(config.clone().proxy).await?,
+        base: Base::new()?,
+        config: config.clone(),
     });
 
     info!("Base URL is set to {}", config.server.base_url);

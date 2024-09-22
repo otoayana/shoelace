@@ -1,23 +1,29 @@
-use crate::{api, frontend, proxy, ShoelaceData};
+use crate::{
+    api,
+    common::config::Settings,
+    frontend::{self, Base},
+    proxy, ShoelaceData,
+};
 use axum::{http::StatusCode, Router};
 use axum_test::TestServer;
 use spools::{Post, User};
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock},
+};
 use tokio::sync::Mutex;
 
-const TEST_APP_DATA: ShoelaceData = ShoelaceData {
+static TEST_APP_DATA: LazyLock<ShoelaceData> = LazyLock::new(|| ShoelaceData {
     store: crate::proxy::Keystore::None,
-    log_cdn: false,
-    log_ips: false,
-    frontend: true,
-    base_url: String::new(),
-};
+    base: Base::new().unwrap(),
+    config: Settings::new().unwrap(),
+});
 
 #[tokio::test]
 async fn user_fe() {
     let app = Router::new()
         .merge(frontend::routes::attach(true))
-        .with_state(Arc::new(TEST_APP_DATA));
+        .with_state(Arc::new(TEST_APP_DATA.clone()));
     let server = TestServer::new(app).unwrap();
 
     let response = server.get("/@zuck").await;
@@ -30,7 +36,7 @@ async fn user_fe() {
 async fn post_fe() {
     let app = Router::new()
         .merge(frontend::routes::attach(true))
-        .with_state(Arc::new(TEST_APP_DATA));
+        .with_state(Arc::new(TEST_APP_DATA.clone()));
     let server = TestServer::new(app).unwrap();
 
     let response = server.get("/t/C2QBoRaRmR1").await;
@@ -43,7 +49,7 @@ async fn post_fe() {
 async fn user_api() {
     let app = Router::new()
         .nest("/api/", api::attach(true))
-        .with_state(Arc::new(TEST_APP_DATA));
+        .with_state(Arc::new(TEST_APP_DATA.clone()));
     let server = TestServer::new(app).unwrap();
 
     let response = server.get("/api/user/zuck").await;
@@ -57,7 +63,7 @@ async fn user_api() {
 async fn post_api() {
     let app = Router::new()
         .nest("/api/", api::attach(true))
-        .with_state(Arc::new(TEST_APP_DATA));
+        .with_state(Arc::new(TEST_APP_DATA.clone()));
     let server = TestServer::new(app).unwrap();
 
     let response = server.get("/api/post/C2QBoRaRmR1").await;
@@ -74,10 +80,8 @@ async fn proxy() {
         .nest("/proxy/", proxy::attach())
         .with_state(Arc::new(ShoelaceData {
             store: crate::proxy::Keystore::Internal(Arc::new(Mutex::new(HashMap::new()))),
-            log_ips: false,
-            log_cdn: false,
-            frontend: false,
-            base_url: "".to_string(),
+            base: Base::new().unwrap(),
+            config: Settings::new().unwrap(),
         }));
     let server = TestServer::new(app).unwrap();
 

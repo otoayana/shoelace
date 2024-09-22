@@ -11,7 +11,7 @@ use std::fs::metadata;
 //
 
 // Settings structure
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Settings {
     pub server: Server,
     pub endpoint: Endpoint,
@@ -20,7 +20,7 @@ pub struct Settings {
 }
 
 // Server settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Server {
     pub listen: String,
     pub port: u16,
@@ -29,7 +29,7 @@ pub struct Server {
 }
 
 // TLS settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Tls {
     pub enabled: bool,
     pub cert: String,
@@ -37,7 +37,7 @@ pub struct Tls {
 }
 
 // Endpoint settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Endpoint {
     pub frontend: bool,
     pub api: bool,
@@ -45,20 +45,20 @@ pub struct Endpoint {
 }
 
 // Proxy settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Proxy {
     pub backend: Backends,
     pub redis: Option<Redis>,
 }
 
 // Redis settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Redis {
     pub uri: String,
 }
 
 // Logging settings
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Logging {
     pub level: String,
 

@@ -1,7 +1,7 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use crate::{
-    frontend::templates::{Base, HomeView, PostView, UserView},
+    frontend::templates::{HomeView, PostView, UserView},
     req, Error, ShoelaceData,
 };
 use askama_axum::Template;
@@ -48,9 +48,11 @@ struct Find {
 }
 
 // Landing page
-async fn home() -> Result<Html<String>, Error> {
-    let base = Base::new()?;
-    let template = HomeView { base }.render()?;
+async fn home(State(state): State<Arc<ShoelaceData>>) -> Result<Html<String>, Error> {
+    let template = HomeView {
+        base: state.base.clone(),
+    }
+    .render()?;
 
     Ok(Html(template))
 }
@@ -60,7 +62,7 @@ async fn user(
     Path(user): Path<String>,
     State(state): State<Arc<ShoelaceData>>,
 ) -> Result<Html<String>, Error> {
-    let mut base = Base::new()?;
+    let mut base = state.base.clone();
 
     base.timer(true)?;
     let req = req::user(&user, state.borrow()).await?;
@@ -81,7 +83,7 @@ async fn post(
     Path(post): Path<String>,
     State(state): State<Arc<ShoelaceData>>,
 ) -> Result<Html<String>, Error> {
-    let mut base = Base::new()?;
+    let mut base = state.base.clone();
 
     base.timer(true)?;
     let req = req::post(&post, state.borrow()).await?;

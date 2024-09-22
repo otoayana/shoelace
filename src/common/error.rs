@@ -73,10 +73,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let base = Base::new().unwrap();
         let body: String;
-        let status: StatusCode = match self {
-            Error::Threads(SpoolsError::NotFound(_)) | Error::NotFound => StatusCode::NOT_FOUND,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
+        let status: StatusCode = self.status();
 
         let template = crate::frontend::templates::ErrorView {
             base,
