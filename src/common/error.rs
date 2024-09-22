@@ -40,7 +40,7 @@ pub enum Error {
     #[error("couldn't fetch time: {0}")]
     Time(#[from] SystemTimeError),
     #[error("timer error: {0}")]
-    TimerError(#[from] TimerError),
+    Timer(#[from] TimerError),
     #[error("couldn't start logger: {0}")]
     Logger(#[from] SetLoggerError),
     #[error("config error: {0}")]

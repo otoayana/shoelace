@@ -10,6 +10,7 @@ use axum::{
     Json, Router,
 };
 
+/// Attaches the API module to an Axum router
 pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     let mut routed = Router::new();
 
@@ -22,7 +23,7 @@ pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     routed
 }
 
-// User API endpoint
+/// User API endpoint
 async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) -> Response {
     let resp = req::user(&user, store.borrow()).await;
 
@@ -32,7 +33,7 @@ async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) 
     }
 }
 
-// // Post API endpoint
+/// Post API endpoint
 async fn post(Path(post): Path<String>, State(store): State<Arc<ShoelaceData>>) -> Response {
     let resp = req::post(&post, store.borrow()).await;
 

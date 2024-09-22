@@ -4,13 +4,6 @@ mod frontend;
 mod proxy;
 mod rss;
 
-use axum_server::tls_rustls::RustlsConfig;
-use common::config;
-use common::error::Error;
-use common::req;
-use frontend::Base;
-use tracing_log::LogTracer;
-
 #[cfg(test)]
 mod test;
 
@@ -24,6 +17,11 @@ use axum::{
     response::IntoResponse,
     RequestPartsExt, Router,
 };
+use axum_server::tls_rustls::RustlsConfig;
+use common::config;
+use common::error::Error;
+use common::req;
+use frontend::Base;
 use git_version::git_version;
 use lazy_static::lazy_static;
 use proxy::Keystore;
@@ -35,6 +33,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tracing::{info, instrument, warn};
+use tracing_log::LogTracer;
 use tracing_subscriber::{filter::LevelFilter, fmt::Layer, prelude::*, EnvFilter, Registry};
 
 #[derive(Clone, Debug)]
@@ -127,6 +126,7 @@ async fn logger<'a>(
     response
 }
 
+/// Handles fallback responses as 404
 async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body) {
     (
         StatusCode::NOT_FOUND,
@@ -138,7 +138,6 @@ async fn not_found(State(state): State<Arc<ShoelaceData>>) -> (StatusCode, Body)
     )
 }
 
-// Web server
 #[instrument(name = "shoelace::main")]
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -151,7 +150,7 @@ async fn main() -> Result<()> {
                 "warn" => LevelFilter::WARN,
                 "debug" => LevelFilter::DEBUG,
                 "trace" => LevelFilter::TRACE,
-                "info" | _ => LevelFilter::INFO,
+                _ => LevelFilter::INFO,
             }
             .into(),
         )
@@ -202,19 +201,18 @@ async fn main() -> Result<()> {
         .fallback(not_found)
         .with_state(data);
 
-    let tls_params = match config.server.tls {
-        Some(opt) => {
-            if opt.enabled {
-                info!("TLS has been enabled");
-            }
-
-            opt
+    let tls_params = if let Some(opt) = config.server.tls {
+        if opt.enabled {
+            info!("TLS has been enabled");
         }
-        None => Tls {
+
+        opt
+    } else {
+        Tls {
             enabled: false,
             cert: String::new(),
             key: String::new(),
-        },
+        }
     };
 
     info!(

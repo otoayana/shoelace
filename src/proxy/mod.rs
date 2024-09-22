@@ -18,16 +18,14 @@ use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use blake2::{Blake2s256, Digest};
 use tracing::info;
 
+/// Attaches the Proxy module to an Axum router
 pub fn attach() -> Router<Arc<ShoelaceData>> {
-    let routed = Router::new().route("/:id", get(serve));
-
-    routed
+    Router::new().route("/:id", get(serve))
 }
 
-// Stores media URLs
+/// Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
 pub async fn store(url: &str, data: ShoelaceData) -> Result<String, Error> {
-    // Generates hash for URL in CDN
     let hash = Blake2s256::digest(url.as_bytes());
     let hashstring = URL_SAFE.encode(hash).to_string();
     let hash_url = format!(
@@ -36,15 +34,12 @@ pub async fn store(url: &str, data: ShoelaceData) -> Result<String, Error> {
         hashstring.clone()
     );
 
-    // Find which keystore is being used
     let result = match &data.store {
-        // Internal keystore
         Keystore::Internal(store) => {
             let mut lock = store.lock().await;
             lock.insert(hashstring.clone(), url.to_string());
             Ok(hash_url)
         }
-        // Redis
         Keystore::Redis(store) => {
             let mut con = store.to_owned();
 
@@ -73,7 +68,7 @@ pub async fn store(url: &str, data: ShoelaceData) -> Result<String, Error> {
     result
 }
 
-// Proxies media from Threads
+/// Proxies media from Threads
 #[tracing::instrument(err(Display), fields(error, hash))]
 async fn serve(
     Path(hash): Path<String>,
@@ -81,7 +76,6 @@ async fn serve(
 ) -> Result<Response, Error> {
     let url: String = match &data.store {
         Keystore::Internal(store) => {
-            // Lock hash map
             let lock = store.lock().await;
 
             match lock.get(&hash) {

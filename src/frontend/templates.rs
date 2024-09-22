@@ -197,7 +197,7 @@ impl Base {
                 )
             })
         } else {
-            Err(Error::TimerError(TimerError::NotStarted))
+            Err(Error::Timer(TimerError::NotStarted))
         }
     }
 
@@ -209,12 +209,12 @@ impl Base {
             self.time = Some(now);
         } else if let Some(time) = self.time {
             if time > now {
-                return Err(Error::TimerError(TimerError::ClockSkew));
+                return Err(Error::Timer(TimerError::ClockSkew));
             }
 
             self.time = Some(now - time);
         } else {
-            return Err(Error::TimerError(TimerError::NotStarted));
+            return Err(Error::Timer(TimerError::NotStarted));
         }
 
         Ok(())

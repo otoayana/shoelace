@@ -12,6 +12,7 @@ use chrono::{TimeZone, Utc};
 use rss::{ChannelBuilder, ImageBuilder, Item, ItemBuilder};
 use std::sync::Arc;
 
+/// Attaches the RSS module to an Axum router
 pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     let mut routed = Router::new();
 
@@ -22,7 +23,7 @@ pub fn attach(enabled: bool) -> Router<Arc<ShoelaceData>> {
     routed
 }
 
-// Build an RSS feed for a profile
+/// Build an RSS feed for a profile
 async fn user(Path(user): Path<String>, State(store): State<Arc<ShoelaceData>>) -> Response {
     let request = req::user(&user, &store).await;
 

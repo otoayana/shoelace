@@ -10,7 +10,6 @@ use std::fs::metadata;
 // 'contrib/shoelace.toml', the sample config file for Shoelace.
 //
 
-// Settings structure
 #[derive(Clone, Debug, Deserialize)]
 pub struct Settings {
     pub server: Server,
@@ -19,7 +18,6 @@ pub struct Settings {
     pub logging: Logging,
 }
 
-// Server settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Server {
     pub listen: String,
@@ -28,7 +26,6 @@ pub struct Server {
     pub tls: Option<Tls>,
 }
 
-// TLS settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Tls {
     pub enabled: bool,
@@ -36,7 +33,6 @@ pub struct Tls {
     pub key: String,
 }
 
-// Endpoint settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Endpoint {
     pub frontend: bool,
@@ -44,20 +40,17 @@ pub struct Endpoint {
     pub rss: bool,
 }
 
-// Proxy settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Proxy {
     pub backend: Backends,
     pub redis: Option<Redis>,
 }
 
-// Redis settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Redis {
     pub uri: String,
 }
 
-// Logging settings
 #[derive(Clone, Debug, Deserialize)]
 pub struct Logging {
     pub level: String,
@@ -69,10 +62,8 @@ pub struct Logging {
     pub output: String,
 }
 
-// Implement constructor
 impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
-        // Sets potential paths for config file
         let config_path = match env::var("SHOELACE_CONFIG") {
             Ok(path) => path,
             Err(_) => String::from("shoelace.toml"),
@@ -80,7 +71,6 @@ impl Settings {
 
         let maybe_file = metadata(&config_path);
 
-        // Defines settings builder
         let mut builder = Config::builder()
             .add_source(Environment::with_prefix("SHOELACE"))
             // This will be the default setup, if no config files are provided.

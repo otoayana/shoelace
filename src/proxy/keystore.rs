@@ -6,7 +6,6 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-// Define keystores
 #[derive(Debug, Clone)]
 pub enum Keystore {
     Internal(Arc<Mutex<HashMap<String, String>>>),
@@ -14,7 +13,6 @@ pub enum Keystore {
     None,
 }
 
-// Possible backends
 #[derive(Debug, Deserialize, Clone)]
 pub enum Backends {
     None,
@@ -23,32 +21,28 @@ pub enum Backends {
 }
 
 impl Keystore {
+    /// Builds a new Keystore object
     #[tracing::instrument(name = "init", skip(config))]
     pub async fn new(config: Proxy) -> Result<Self, KeystoreError> {
         let mut redis_conninfo: Option<ConnectionAddr> = None;
 
         let backend = match config.backend {
-            // Redis
             Backends::Redis => Self::Redis({
-                // Checks if there's any settings set for Redis
                 match config.redis {
                     Some(redis) => {
-                        // Configure client using the URI provided by the user
                         let client = redis::Client::open(redis.uri)
                             .map_err(KeystoreError::RedisError)
                             .unwrap();
 
                         redis_conninfo = Some(client.clone().get_connection_info().clone().addr);
 
-                        // Establish connection
                         client.get_multiplexed_async_connection().await?
                     }
                     None => return Err(KeystoreError::InvalidConfig(config.backend)),
                 }
             }),
-            // Internal (Creates hash map)
+            // The internal keystore is essentially just a HashMap, which is kept in memory
             Backends::Internal => Self::Internal(Arc::new(Mutex::new(HashMap::new()))),
-            // No backend
             Backends::None => Self::None,
         };
 

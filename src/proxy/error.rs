@@ -6,7 +6,6 @@ use thiserror::Error;
 
 use crate::proxy::keystore::Backends;
 
-/// Defines proxy errors
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Proxy is unavailable")]
@@ -23,7 +22,6 @@ pub enum Error {
     Web(#[from] axum::http::Error),
 }
 
-// Defines keystore errors
 #[derive(Error, Debug)]
 pub enum KeystoreError {
     #[error("{0}")]
