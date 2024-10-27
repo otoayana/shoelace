@@ -15,7 +15,6 @@ use axum::{
     Router,
 };
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
-use blake2::{Blake2s256, Digest};
 use tracing::info;
 
 /// Attaches the Proxy module to an Axum router
@@ -26,7 +25,7 @@ pub fn attach() -> Router<Arc<ShoelaceData>> {
 /// Stores media URLs
 #[tracing::instrument(err(Display), skip(url, data))]
 pub async fn store(url: &str, data: ShoelaceData) -> Result<String, Error> {
-    let hash = Blake2s256::digest(url.as_bytes());
+    let hash = blake3::hash(url.as_bytes()).to_string();
     let hashstring = URL_SAFE.encode(hash).to_string();
     let hash_url = format!(
         "{}/proxy/{}",

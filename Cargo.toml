@@ -7,8 +7,6 @@ repository = "https://git.sr.ht/~nixgoat/shoelace"
 license = "AGPL-3.0-or-later"
 build = "build.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0"
 askama = "0.12"
@@ -17,7 +15,7 @@ axum = "0.7"
 axum-test = "15"
 axum-xml-up = "0.2"
 base64 = "0.22"
-blake2 = "0.10"
+blake3 = "1.5"
 chrono = "0.4"
 config = "0.14"
 futures = "0.3.30"
